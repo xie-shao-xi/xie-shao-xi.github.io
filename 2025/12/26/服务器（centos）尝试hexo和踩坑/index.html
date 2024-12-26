@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <meta name="description" content="描述" />
+  
+
+  
+  <meta name="keywords" content="关键词1,关键词2" />
+  
+  
+  
+  
+  
+  
+  <title>服务器（centos）尝试hexo和踩坑 | 谢某</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="服务器（centos）尝试hexo和踩坑一、初始化hexo 准备环境  &#x2F;&#x2F; 官网https:&#x2F;&#x2F;hexo.io&#x2F;zh-cn  &#x2F;&#x2F; 下载git sudo yum install git-core  &#x2F;&#x2F; 下载nodejs sudo yum install -y nodejs   初始化hexo  &amp;#x2F">
+<meta property="og:type" content="article">
+<meta property="og:title" content="服务器（centos）尝试hexo和踩坑">
+<meta property="og:url" content="http://example.com/2025/12/26/%E6%9C%8D%E5%8A%A1%E5%99%A8%EF%BC%88centos%EF%BC%89%E5%B0%9D%E8%AF%95hexo%E5%92%8C%E8%B8%A9%E5%9D%91/index.html">
+<meta property="og:site_name" content="谢某">
+<meta property="og:description" content="服务器（centos）尝试hexo和踩坑一、初始化hexo 准备环境  &#x2F;&#x2F; 官网https:&#x2F;&#x2F;hexo.io&#x2F;zh-cn  &#x2F;&#x2F; 下载git sudo yum install git-core  &#x2F;&#x2F; 下载nodejs sudo yum install -y nodejs   初始化hexo  &amp;#x2F">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-12-26T08:00:00.000Z">
+<meta property="article:modified_time" content="2024-12-26T08:04:40.173Z">
+<meta property="article:author" content="xsx">
+<meta property="article:tag" content="关键词1,关键词2">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/css/images/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+  
+  <!-- baidu webmaster push -->
+  <script src='//push.zhanzhang.baidu.com/push.js'></script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body class="home blog custom-background custom-font-enabled single-author">
+  <div id="page" class="hfeed site">
+      <header id="masthead" class="site-header" role="banner">
+    <hgroup>
+      <h1 class="site-title">
+        <a href="/" title="谢某" rel="home">谢某</a>
+      </h1>
+      
+        <h2 class="site-description hitokoto"></h2>
+        <script type="text/javascript" src="https://v1.hitokoto.cn/?encode=js"></script>
+      
+    </hgroup>
+
+    <nav id="site-navigation" class="main-navigation" role="navigation">
+            <button class="menu-toggle">菜单</button>
+            <a class="assistive-text" href="/#content" title="跳至内容">跳至内容</a><!--TODO-->
+            <div class="menu-main-container">
+                <ul id="menu-main" class="nav-menu">
+                
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="/">首页</a></li>
+                
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="/archives">归档</a></li>
+                
+                </ul>
+            </div>
+    </nav>
+</header>
+
+      <div id="main" class="wrapper">
+        <div id="primary" class="site-content"><div id="content" role="main"><article id="post-服务器（centos）尝试hexo和踩坑" class="post-服务器（centos）尝试hexo和踩坑 post type-post status-publish format-standard hentry">
+    <!---->
+
+      <header class="entry-header">
+        
+        
+  
+    <h1 class="entry-title article-title">
+      服务器（centos）尝试hexo和踩坑
+    </h1>
+  
+
+        
+        <div class="comments-link">
+            
+            <!-- <a href="javascript:void(0);" data-url="http://example.com/2025/12/26/%E6%9C%8D%E5%8A%A1%E5%99%A8%EF%BC%88centos%EF%BC%89%E5%B0%9D%E8%AF%95hexo%E5%92%8C%E8%B8%A9%E5%9D%91/" data-id="cm5519f220000f0tvdqvp6vvq" class="leave-reply bdsharebuttonbox" data-cmd="more">Share</a> -->
+        </div><!-- .comments-link -->
+      </header><!-- .entry-header -->
+
+    <div class="entry-content">
+      
+        <h2 id="服务器（centos）尝试hexo和踩坑"><a href="#服务器（centos）尝试hexo和踩坑" class="headerlink" title="服务器（centos）尝试hexo和踩坑"></a>服务器（centos）尝试hexo和踩坑</h2><h3 id="一、初始化hexo"><a href="#一、初始化hexo" class="headerlink" title="一、初始化hexo"></a>一、初始化hexo</h3><ol>
+<li>准备环境</li>
+</ol>
+<pre class="line-numbers language-none"><code class="language-none">&#x2F;&#x2F; 官网https:&#x2F;&#x2F;hexo.io&#x2F;zh-cn
+
+&#x2F;&#x2F; 下载git
+sudo yum install git-core
+
+&#x2F;&#x2F; 下载nodejs
+sudo yum install -y nodejs<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<ol start="2">
+<li>初始化hexo</li>
+</ol>
+<pre class="line-numbers language-none"><code class="language-none">&#x2F;&#x2F; 下载安装hexo脚手架
+npm install -g hexo-cli
+
+&#x2F;&#x2F; 下载hexo
+npm install hexo
+
+&#x2F;&#x2F; 初始化项目（项目名blog，可自定义）
+hexo init blog
+
+&#x2F;&#x2F; 进入项目
+cd blog
+
+&#x2F;&#x2F; 下载依赖
+npm install
+
+&#x2F;&#x2F; 本地执行博客
+hexo server &#x2F;&#x2F; 简写命令 hexo s<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<ol start="3">
+<li>成功的话，访问本地4000端口即可</li>
+</ol>
+<h3 id="未完待续"><a href="#未完待续" class="headerlink" title="未完待续"></a>未完待续</h3><pre class="line-numbers language-none"><code class="language-none">个人博客
+
+在线编辑？
+
+更新到github
+
+更新到服务器
+
+弄个域名
+
+选个主题
+
+添加需要的功能<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="踩坑"><a href="#踩坑" class="headerlink" title="踩坑"></a>踩坑</h3><h4 id="（一）、hexo、nodejs版本冲突"><a href="#（一）、hexo、nodejs版本冲突" class="headerlink" title="（一）、hexo、nodejs版本冲突"></a>（一）、hexo、nodejs版本冲突</h4><ol>
+<li>下载脚手架时报错</li>
+</ol>
+<pre class="line-numbers language-none"><code class="language-none">报错：Failed at the hexo-util@3.3.0 postinstall script...<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p><strong>原因</strong>：centos8.6，执行<code>sudo yum install -y nodejs</code>下载的nodejs版本为10.x，与最新的hexo-cli冲突</p>
+<p><strong>尝试解决</strong>：根据官网hexo版本和nodejs对应关系，加上hexo-cli发布时间和hexo版本发布时间，推算需要的hexo-cli版本和hexo版本（原先打算使用nvm升级nodejs版本，但服务器下载一直卡住，就只能换方案）</p>
+<pre class="line-numbers language-none"><code class="language-none">&#x2F;&#x2F; 下载hexo-cli时，指定版本，成功下载脚手架
+npm install -g hexo-cli@xxx<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<ol start="2">
+<li>下载hexo时报错</li>
+</ol>
+<pre class="line-numbers language-none"><code class="language-none">报错：TypeError: line.matchAll is not a function...<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p><strong>原因</strong>：该方法至少node12.x才能运行，即nodejs版本还是太低</p>
+<p><strong>尝试解决</strong>：删除原有nodejs，下载新的指定版本的（因直接升级失败，且默认下载就是低版本的）</p>
+<pre class="line-numbers language-none"><code class="language-none">&#x2F;&#x2F;查找已下载的nodejs文件
+dnf list installed | grep nodejs
+
+&#x2F;&#x2F; 删除，上述命令执行后出现三列，第一列即是删除的包名
+sudo dnf remove nodexxx
+
+&#x2F;&#x2F; 下载指定版本node（14.x即是14版本）
+curl -fsSL https:&#x2F;&#x2F;rpm.nodesource.com&#x2F;setup_14.x | sudo bash -
+sudo yum install -y nodejs<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+      
+    </div><!-- .entry-content -->
+
+    <footer class="entry-meta">
+    <a href="/2025/12/26/%E6%9C%8D%E5%8A%A1%E5%99%A8%EF%BC%88centos%EF%BC%89%E5%B0%9D%E8%AF%95hexo%E5%92%8C%E8%B8%A9%E5%9D%91/">
+    <time datetime="2025-12-26T08:00:00.000Z" class="entry-date">
+        2025-12-26
+    </time>
+</a>
+    
+    
+    </footer>
+</article>
+
+
+    
+<nav class="nav-single">
+    <h3 class="assistive-text">文章导航</h3>
+    
+    
+        <span class="nav-next"><a href="/2024/11/25/hello-world/" rel="next">Hello World <span class="meta-nav">→</span></a></span>
+    
+</nav><!-- .nav-single -->
+
+
+
+
+
+
+
+</div></div>
+        <div id="secondary" class="widget-area" role="complementary">
+  
+    <aside id="search" class="widget widget_search">
+    <form role="search" method="get" accept-charset="utf-8" id="searchform" 
+        class="searchform" action="//google.com/search">
+        <div>
+            <input type="text" value="" name="s" id="s" />
+            <input type="submit" id="searchsubmit" value="搜索" />
+        </div>
+    </form>
+</aside>
+  
+    
+  
+    
+  
+    
+  <aside class="widget">
+    <h3 class="widget-title">最近文章</h3>
+    <div class="widget-content">
+      <ul>
+        
+          <li>
+            <a href="/2025/12/26/%E6%9C%8D%E5%8A%A1%E5%99%A8%EF%BC%88centos%EF%BC%89%E5%B0%9D%E8%AF%95hexo%E5%92%8C%E8%B8%A9%E5%9D%91/">服务器（centos）尝试hexo和踩坑</a>
+          </li>
+        
+          <li>
+            <a href="/2024/11/25/hello-world/">Hello World</a>
+          </li>
+        
+      </ul>
+    </div>
+  </aside>
+
+  
+    
+  
+    
+  
+</div>
+      </div>
+      <footer id="colophon" role="contentinfo">
+    <p>&copy; 2024 xsx
+    All rights reserved.</p>
+    <p>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></p>
+</footer>
+    <script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"1","bdMiniList":false,"bdPic":"","bdStyle":"2","bdSize":"16"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='/js/share.js'];</script>
+
+<script src="/js/jquery-3.3.1.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+<script src="/js/navigation.js"></script>
+
+<div id="bg"></div>
+
+  </div>
+</body>
+</html>

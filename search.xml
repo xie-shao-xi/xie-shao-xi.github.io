@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search> 
+  
+  
+    
+    <entry>
+      <title>服务器（centos）尝试hexo和踩坑</title>
+      <link href="/2025/12/26/%E6%9C%8D%E5%8A%A1%E5%99%A8%EF%BC%88centos%EF%BC%89%E5%B0%9D%E8%AF%95hexo%E5%92%8C%E8%B8%A9%E5%9D%91/"/>
+      <url>/2025/12/26/%E6%9C%8D%E5%8A%A1%E5%99%A8%EF%BC%88centos%EF%BC%89%E5%B0%9D%E8%AF%95hexo%E5%92%8C%E8%B8%A9%E5%9D%91/</url>
+      
+        <content type="html"><![CDATA[<h2 id="服务器（centos）尝试hexo和踩坑"><a href="#服务器（centos）尝试hexo和踩坑" class="headerlink" title="服务器（centos）尝试hexo和踩坑"></a>服务器（centos）尝试hexo和踩坑</h2><h3 id="一、初始化hexo"><a href="#一、初始化hexo" class="headerlink" title="一、初始化hexo"></a>一、初始化hexo</h3><ol><li>准备环境</li></ol><pre class="line-numbers language-none"><code class="language-none">&#x2F;&#x2F; 官网https:&#x2F;&#x2F;hexo.io&#x2F;zh-cn&#x2F;&#x2F; 下载gitsudo yum install git-core&#x2F;&#x2F; 下载nodejssudo yum install -y nodejs<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><ol start="2"><li>初始化hexo</li></ol><pre class="line-numbers language-none"><code class="language-none">&#x2F;&#x2F; 下载安装hexo脚手架npm install -g hexo-cli&#x2F;&#x2F; 下载hexonpm install hexo&#x2F;&#x2F; 初始化项目（项目名blog，可自定义）hexo init blog&#x2F;&#x2F; 进入项目cd blog&#x2F;&#x2F; 下载依赖npm install&#x2F;&#x2F; 本地执行博客hexo server &#x2F;&#x2F; 简写命令 hexo s<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><ol start="3"><li>成功的话，访问本地4000端口即可</li></ol><h3 id="未完待续"><a href="#未完待续" class="headerlink" title="未完待续"></a>未完待续</h3><pre class="line-numbers language-none"><code class="language-none">个人博客在线编辑？更新到github更新到服务器弄个域名选个主题添加需要的功能<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre><h3 id="踩坑"><a href="#踩坑" class="headerlink" title="踩坑"></a>踩坑</h3><h4 id="（一）、hexo、nodejs版本冲突"><a href="#（一）、hexo、nodejs版本冲突" class="headerlink" title="（一）、hexo、nodejs版本冲突"></a>（一）、hexo、nodejs版本冲突</h4><ol><li>下载脚手架时报错</li></ol><pre class="line-numbers language-none"><code class="language-none">报错：Failed at the hexo-util@3.3.0 postinstall script...<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p><strong>原因</strong>：centos8.6，执行<code>sudo yum install -y nodejs</code>下载的nodejs版本为10.x，与最新的hexo-cli冲突</p><p><strong>尝试解决</strong>：根据官网hexo版本和nodejs对应关系，加上hexo-cli发布时间和hexo版本发布时间，推算需要的hexo-cli版本和hexo版本（原先打算使用nvm升级nodejs版本，但服务器下载一直卡住，就只能换方案）</p><pre class="line-numbers language-none"><code class="language-none">&#x2F;&#x2F; 下载hexo-cli时，指定版本，成功下载脚手架npm install -g hexo-cli@xxx<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre><ol start="2"><li>下载hexo时报错</li></ol><pre class="line-numbers language-none"><code class="language-none">报错：TypeError: line.matchAll is not a function...<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p><strong>原因</strong>：该方法至少node12.x才能运行，即nodejs版本还是太低</p><p><strong>尝试解决</strong>：删除原有nodejs，下载新的指定版本的（因直接升级失败，且默认下载就是低版本的）</p><pre class="line-numbers language-none"><code class="language-none">&#x2F;&#x2F;查找已下载的nodejs文件dnf list installed | grep nodejs&#x2F;&#x2F; 删除，上述命令执行后出现三列，第一列即是删除的包名sudo dnf remove nodexxx&#x2F;&#x2F; 下载指定版本node（14.x即是14版本）curl -fsSL https:&#x2F;&#x2F;rpm.nodesource.com&#x2F;setup_14.x | sudo bash -sudo yum install -y nodejs<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>]]></content>
+      
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Hello World</title>
+      <link href="/2024/11/25/hello-world/"/>
+      <url>/2024/11/25/hello-world/</url>
+      
+        <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ hexo new <span class="token string">"My New Post"</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ hexo server<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ hexo generate<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ hexo deploy<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre><p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>]]></content>
+      
+      
+      
+    </entry>
+    
+    
+  
+  
+</search>
