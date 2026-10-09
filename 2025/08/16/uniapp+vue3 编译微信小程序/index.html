@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <meta name="description" content="描述" />
+  
+
+  
+  <meta name="keywords" content="关键词1,关键词2" />
+  
+  
+  
+  
+  
+  
+  <title>服务器（centos）尝试hexo和踩坑 | 谢某</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="一、初试uniapp 创建uniapp+vue3项目 npx degit dcloudio&#x2F;uni-preset-vue#vite my-vue3-project  运行项目 npm run dev:mp-weixin &#x2F;&#x2F;并通过微信开发工具打开dev&#x2F;mp-weixin目录  打包项目 npm run build:mp-weixin  引用全局样式 创建项">
+<meta property="og:type" content="article">
+<meta property="og:title" content="服务器（centos）尝试hexo和踩坑">
+<meta property="og:url" content="https://xie-shao-xi.github.io/2025/08/16/uniapp+vue3%20%E7%BC%96%E8%AF%91%E5%BE%AE%E4%BF%A1%E5%B0%8F%E7%A8%8B%E5%BA%8F/index.html">
+<meta property="og:site_name" content="谢某">
+<meta property="og:description" content="一、初试uniapp 创建uniapp+vue3项目 npx degit dcloudio&#x2F;uni-preset-vue#vite my-vue3-project  运行项目 npm run dev:mp-weixin &#x2F;&#x2F;并通过微信开发工具打开dev&#x2F;mp-weixin目录  打包项目 npm run build:mp-weixin  引用全局样式 创建项">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-08-16T07:00:00.000Z">
+<meta property="article:modified_time" content="2026-10-09T01:11:24.457Z">
+<meta property="article:author" content="xsx">
+<meta property="article:tag" content="关键词1,关键词2">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/css/images/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+  
+  <!-- baidu webmaster push -->
+  <script src='//push.zhanzhang.baidu.com/push.js'></script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body class="home blog custom-background custom-font-enabled single-author">
+  <div id="page" class="hfeed site">
+      <header id="masthead" class="site-header" role="banner">
+    <hgroup>
+      <h1 class="site-title">
+        <a href="/" title="谢某" rel="home">谢某</a>
+      </h1>
+      
+        <h2 class="site-description hitokoto"></h2>
+        <script type="text/javascript" src="https://v1.hitokoto.cn/?encode=js"></script>
+      
+    </hgroup>
+
+    <nav id="site-navigation" class="main-navigation" role="navigation">
+            <button class="menu-toggle">菜单</button>
+            <a class="assistive-text" href="/#content" title="跳至内容">跳至内容</a><!--TODO-->
+            <div class="menu-main-container">
+                <ul id="menu-main" class="nav-menu">
+                
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="/">首页</a></li>
+                
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="/archives">归档</a></li>
+                
+                </ul>
+            </div>
+    </nav>
+</header>
+
+      <div id="main" class="wrapper">
+        <div id="primary" class="site-content"><div id="content" role="main"><article id="post-uniapp+vue3 编译微信小程序" class="post-uniapp+vue3 编译微信小程序 post type-post status-publish format-standard hentry">
+    <!---->
+
+      <header class="entry-header">
+        
+        
+  
+    <h1 class="entry-title article-title">
+      服务器（centos）尝试hexo和踩坑
+    </h1>
+  
+
+        
+        <div class="comments-link">
+            
+            <!-- <a href="javascript:void(0);" data-url="https://xie-shao-xi.github.io/2025/08/16/uniapp+vue3%20%E7%BC%96%E8%AF%91%E5%BE%AE%E4%BF%A1%E5%B0%8F%E7%A8%8B%E5%BA%8F/" data-id="cmv09saqw0003lo4cctbrdf23" class="leave-reply bdsharebuttonbox" data-cmd="more">Share</a> -->
+        </div><!-- .comments-link -->
+      </header><!-- .entry-header -->
+
+    <div class="entry-content">
+      
+        <h3 id="一、初试uniapp"><a href="#一、初试uniapp" class="headerlink" title="一、初试uniapp"></a>一、初试uniapp</h3><ol>
+<li><p>创建uniapp+vue3项目</p>
+<pre class="line-numbers language-none"><code class="language-none">npx degit dcloudio&#x2F;uni-preset-vue#vite my-vue3-project<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+</li>
+<li><p>运行项目</p>
+<pre class="line-numbers language-none"><code class="language-none">npm run dev:mp-weixin &#x2F;&#x2F;并通过微信开发工具打开dev&#x2F;mp-weixin目录<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+</li>
+<li><p>打包项目</p>
+<pre class="line-numbers language-none"><code class="language-none">npm run build:mp-weixin<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+</li>
+<li><p>引用全局样式</p>
+<p>创建项目后，根目录下自动生成uni.sass文件，里面的样式可以在页面中直接使用，不需要再单独引入</p>
+</li>
+<li><p>1</p>
+</li>
+</ol>
+<h3 id="遇到的问题"><a href="#遇到的问题" class="headerlink" title="遇到的问题"></a>遇到的问题</h3><ol>
+<li><p>$callHook is not function</p>
+<pre class="line-numbers language-none"><code class="language-none">老版本打包为微信小程序，并在切后台、切回来时会报错，直接更新为最新版本即可
+npx @dcloudio&#x2F;uvm@latest
+由原先的3.0.30xxxx更新为3.0.407xxx，该bug就解决了<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+</li>
+<li><p>打包为小程序分包</p>
+<pre class="line-numbers language-none"><code class="language-none">老版本中，打包命令改为npm run build:mp-weixin --subpackage&#x3D;分包名时
+打包后会将代码从build&#x2F;mp-weixin打包为build&#x2F;mp-weixin&#x2F;分包名，但是静态文件的路径仍旧是根目录的路径
+需要升级最新版本，再重新打包，静态文件路径才会是&#x2F;分包名&#x2F;xx<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+</li>
+<li><p>自定义组件编译后不显示</p>
+<p>自定义组件需要放在src&#x2F;components中（怎么自定义目录暂不了解，待了解）</p>
+<p>命名为src&#x2F;components&#x2F;custom-com&#x2F;custom-com.vue</p>
+<p>然后重新编译，编译完看一下编译后小程序文件中的组件目录下存不存在该组件（若不存在，则重新编译）</p>
+<p>若还不显示，则再看看编译后的引用页面中json是否正确引用了该组件</p>
+<p>若编译后代码一切正常，但是还是不显示</p>
+<p><strong>关闭微信开发者工具，重新打开</strong>（有时候关闭窗口，重新打开项目就可以）</p>
+<p>查看是否显示的过程中，记得看开发者工具的调试页面（console），看看是不是组件内部代码异常</p>
+</li>
+<li><p>uniapp自定义组件用于form表单中</p>
+<ol>
+<li><p>通过definedProps接收value，用于显示</p>
+</li>
+<li><p>自定义嵌套一层用于form表单校验时，v-model无效果，改为:value</p>
+</li>
+<li><p>使用emit定义change方法</p>
+</li>
+<li><p>自定义组件中，触发改变后回调中，执行emit(‘change’, newValue)</p>
+</li>
+<li><p>在引入组件的地方</p>
+<pre class="line-numbers language-none"><code class="language-none">@change&#x3D;&quot;(value)&#x3D;&gt;&#123;formData.key&#x3D;value;formItemRef.onFieldChange(value)&#125;&quot;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+</li>
+<li><p>watch监听props变化时，若无反应，则改为</p>
+<pre class="line-numbers language-none"><code class="language-none">watch(() &#x3D;&gt; props.data, () &#x3D;&gt; &#123;&#125;, &#123; deep: true &#125;)<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+</li>
+<li><p>1</p>
+</li>
+</ol>
+</li>
+<li><p>v-if导致form-item重新挂载，不会触发uni-form校验问题</p>
+<pre class="line-numbers language-javascript" data-language="javascript"><code class="language-javascript"><span class="token comment">// 在form-item中绑定规则，此处个人习惯和form的写一块，然后这里用:rules="ruleData.key.rules"引入</span>
+<span class="token operator">&lt;</span>uni<span class="token operator">-</span>form<span class="token operator">-</span>item <span class="token operator">:</span>rules<span class="token operator">=</span><span class="token string">"[&#123; ... &#125;]"</span><span class="token operator">></span><span class="token operator">&lt;</span>uni<span class="token operator">-</span>form<span class="token operator">-</span>item<span class="token operator">></span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+</li>
+<li><p>1</p>
+</li>
+</ol>
+
+      
+    </div><!-- .entry-content -->
+
+    <footer class="entry-meta">
+    <a href="/2025/08/16/uniapp+vue3%20%E7%BC%96%E8%AF%91%E5%BE%AE%E4%BF%A1%E5%B0%8F%E7%A8%8B%E5%BA%8F/">
+    <time datetime="2025-08-16T07:00:00.000Z" class="entry-date">
+        2025-08-16
+    </time>
+</a>
+    
+    
+    </footer>
+</article>
+
+
+    
+<nav class="nav-single">
+    <h3 class="assistive-text">文章导航</h3>
+    
+        <span class="nav-previous"><a href="/2025/12/26/%E6%9C%8D%E5%8A%A1%E5%99%A8%EF%BC%88centos%EF%BC%89%E5%B0%9D%E8%AF%95hexo%E5%92%8C%E8%B8%A9%E5%9D%91/" rel="prev"><span class="meta-nav">←</span> 服务器（centos）尝试hexo和踩坑</a></span>
+    
+    
+        <span class="nav-next"><a href="/2025/02/25/%E5%B0%8F%E7%A8%8B%E5%BA%8F%E8%B8%A9%E5%9D%91/" rel="next">小程序踩坑 <span class="meta-nav">→</span></a></span>
+    
+</nav><!-- .nav-single -->
+
+
+
+
+
+
+
+</div></div>
+        <div id="secondary" class="widget-area" role="complementary">
+  
+    <aside id="search" class="widget widget_search">
+    <form role="search" method="get" accept-charset="utf-8" id="searchform" 
+        class="searchform" action="//google.com/search">
+        <div>
+            <input type="text" value="" name="s" id="s" />
+            <input type="submit" id="searchsubmit" value="搜索" />
+        </div>
+    </form>
+</aside>
+  
+    
+  
+    
+  
+    
+  <aside class="widget">
+    <h3 class="widget-title">最近文章</h3>
+    <div class="widget-content">
+      <ul>
+        
+          <li>
+            <a href="/2026/10/09/hello-world/">Hello World</a>
+          </li>
+        
+          <li>
+            <a href="/2025/12/27/%E5%B0%9D%E8%AF%95%E4%BE%BF%E6%8D%B7%E6%9B%B4%E6%96%B0%E5%8D%9A%E5%AE%A2/">尝试便捷更新博客</a>
+          </li>
+        
+          <li>
+            <a href="/2025/12/26/react%E9%A1%B9%E7%9B%AE/">服务器（centos）尝试hexo和踩坑</a>
+          </li>
+        
+          <li>
+            <a href="/2025/12/26/%E6%9C%8D%E5%8A%A1%E5%99%A8%EF%BC%88centos%EF%BC%89%E5%B0%9D%E8%AF%95hexo%E5%92%8C%E8%B8%A9%E5%9D%91/">服务器（centos）尝试hexo和踩坑</a>
+          </li>
+        
+          <li>
+            <a href="/2025/08/16/uniapp+vue3%20%E7%BC%96%E8%AF%91%E5%BE%AE%E4%BF%A1%E5%B0%8F%E7%A8%8B%E5%BA%8F/">服务器（centos）尝试hexo和踩坑</a>
+          </li>
+        
+      </ul>
+    </div>
+  </aside>
+
+  
+    
+  
+    
+  
+</div>
+      </div>
+      <footer id="colophon" role="contentinfo">
+    <p>&copy; 2026 xsx
+    All rights reserved.</p>
+    <p>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></p>
+</footer>
+    <script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"1","bdMiniList":false,"bdPic":"","bdStyle":"2","bdSize":"16"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='/js/share.js'];</script>
+
+<script src="/js/jquery-3.3.1.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+<script src="/js/navigation.js"></script>
+
+<div id="bg"></div>
+
+  </div>
+</body>
+</html>

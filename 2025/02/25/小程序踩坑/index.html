@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <meta name="description" content="描述" />
+  
+
+  
+  <meta name="keywords" content="关键词1,关键词2" />
+  
+  
+  
+  
+  
+  
+  <title>小程序踩坑 | 谢某</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="一、webview打开页面 webview打开的页面需要在小程序中配置为业务域名，即需要在对应的服务器根目录下放置校验文件，需要https（应该），所以如果内部跳转其他页面，而没有配置域名，则会提醒该页面无法打开，即使是微信官方自己的页面 webview跳转客服，因为跳转客服要么使用按钮，并设置open-type，要么使用对应的api跳转，但都没办法在webview中使用，所以可以先跳转到小程序页">
+<meta property="og:type" content="article">
+<meta property="og:title" content="小程序踩坑">
+<meta property="og:url" content="https://xie-shao-xi.github.io/2025/02/25/%E5%B0%8F%E7%A8%8B%E5%BA%8F%E8%B8%A9%E5%9D%91/index.html">
+<meta property="og:site_name" content="谢某">
+<meta property="og:description" content="一、webview打开页面 webview打开的页面需要在小程序中配置为业务域名，即需要在对应的服务器根目录下放置校验文件，需要https（应该），所以如果内部跳转其他页面，而没有配置域名，则会提醒该页面无法打开，即使是微信官方自己的页面 webview跳转客服，因为跳转客服要么使用按钮，并设置open-type，要么使用对应的api跳转，但都没办法在webview中使用，所以可以先跳转到小程序页">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-02-25T13:30:00.000Z">
+<meta property="article:modified_time" content="2026-10-09T01:11:24.457Z">
+<meta property="article:author" content="xsx">
+<meta property="article:tag" content="关键词1,关键词2">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/css/images/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+  
+  <!-- baidu webmaster push -->
+  <script src='//push.zhanzhang.baidu.com/push.js'></script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body class="home blog custom-background custom-font-enabled single-author">
+  <div id="page" class="hfeed site">
+      <header id="masthead" class="site-header" role="banner">
+    <hgroup>
+      <h1 class="site-title">
+        <a href="/" title="谢某" rel="home">谢某</a>
+      </h1>
+      
+        <h2 class="site-description hitokoto"></h2>
+        <script type="text/javascript" src="https://v1.hitokoto.cn/?encode=js"></script>
+      
+    </hgroup>
+
+    <nav id="site-navigation" class="main-navigation" role="navigation">
+            <button class="menu-toggle">菜单</button>
+            <a class="assistive-text" href="/#content" title="跳至内容">跳至内容</a><!--TODO-->
+            <div class="menu-main-container">
+                <ul id="menu-main" class="nav-menu">
+                
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="/">首页</a></li>
+                
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="/archives">归档</a></li>
+                
+                </ul>
+            </div>
+    </nav>
+</header>
+
+      <div id="main" class="wrapper">
+        <div id="primary" class="site-content"><div id="content" role="main"><article id="post-小程序踩坑" class="post-小程序踩坑 post type-post status-publish format-standard hentry">
+    <!---->
+
+      <header class="entry-header">
+        
+        
+  
+    <h1 class="entry-title article-title">
+      小程序踩坑
+    </h1>
+  
+
+        
+        <div class="comments-link">
+            
+            <!-- <a href="javascript:void(0);" data-url="https://xie-shao-xi.github.io/2025/02/25/%E5%B0%8F%E7%A8%8B%E5%BA%8F%E8%B8%A9%E5%9D%91/" data-id="cmv09saqx0004lo4cah2g70wo" class="leave-reply bdsharebuttonbox" data-cmd="more">Share</a> -->
+        </div><!-- .comments-link -->
+      </header><!-- .entry-header -->
+
+    <div class="entry-content">
+      
+        <h3 id="一、webview打开页面"><a href="#一、webview打开页面" class="headerlink" title="一、webview打开页面"></a>一、webview打开页面</h3><ol>
+<li>webview打开的页面需要在小程序中配置为业务域名，即需要在对应的服务器根目录下放置校验文件，需要https（应该），所以如果内部跳转其他页面，而没有配置域名，则会提醒该页面无法打开，即使是微信官方自己的页面</li>
+<li>webview跳转客服，因为跳转客服要么使用按钮，并设置open-type，要么使用对应的api跳转，但都没办法在webview中使用，所以可以先跳转到小程序页面（跳转的api在webview中可以调用，官方文档有，但是需要先判断是否在小程序环境内），再跳转到客服（企业微信客服的话，一般是一个work.weixin.qq.com的域名，携带客服id跳转，需要用api调用，且事先在小程序中配置对应的企业微信，需要企业id）</li>
+<li>webview打开视频，在小程序（部分浏览器）中打开视频，一般不能设置自动播放，官方避免用户无感知时浪费太多流量，需要用户点击操作后才能播放视频，可以在用户点击按钮后，再使用video.play()触发视频播放</li>
+<li>webview打开pdf文件，ios环境下可以直接打开，安卓环境下，则会空白，需要在小程序页面中，执行wx.download和wx.opendocument(应该是这个)，先下载文件，再打开；其中下载时需要先设置下载后的本地路径，才能通过后一个api打开，临时路径无法打开；又因为这是下载文件，所以需要把文件对应的域名加到下载域名下（是否需要校验不确定），所以这里的pdf域名需要配置业务域名（ios用），和下载域名（安卓用）；个人操作，是在h5页面中，判断，若是pdf路径，则跳转到新的webview页面，然后再webview页面中判断，若是pdf路径且安卓，则执行下载并打开，若是ios，则直接显示</li>
+</ol>
+
+      
+    </div><!-- .entry-content -->
+
+    <footer class="entry-meta">
+    <a href="/2025/02/25/%E5%B0%8F%E7%A8%8B%E5%BA%8F%E8%B8%A9%E5%9D%91/">
+    <time datetime="2025-02-25T13:30:00.000Z" class="entry-date">
+        2025-02-25
+    </time>
+</a>
+    
+    
+    </footer>
+</article>
+
+
+    
+<nav class="nav-single">
+    <h3 class="assistive-text">文章导航</h3>
+    
+        <span class="nav-previous"><a href="/2025/08/16/uniapp+vue3%20%E7%BC%96%E8%AF%91%E5%BE%AE%E4%BF%A1%E5%B0%8F%E7%A8%8B%E5%BA%8F/" rel="prev"><span class="meta-nav">←</span> 服务器（centos）尝试hexo和踩坑</a></span>
+    
+    
+        <span class="nav-next"><a href="/2025/02/09/qiankun%E5%B0%9D%E8%AF%95/" rel="next">qiankun尝试 <span class="meta-nav">→</span></a></span>
+    
+</nav><!-- .nav-single -->
+
+
+
+
+
+
+
+</div></div>
+        <div id="secondary" class="widget-area" role="complementary">
+  
+    <aside id="search" class="widget widget_search">
+    <form role="search" method="get" accept-charset="utf-8" id="searchform" 
+        class="searchform" action="//google.com/search">
+        <div>
+            <input type="text" value="" name="s" id="s" />
+            <input type="submit" id="searchsubmit" value="搜索" />
+        </div>
+    </form>
+</aside>
+  
+    
+  
+    
+  
+    
+  <aside class="widget">
+    <h3 class="widget-title">最近文章</h3>
+    <div class="widget-content">
+      <ul>
+        
+          <li>
+            <a href="/2026/10/09/hello-world/">Hello World</a>
+          </li>
+        
+          <li>
+            <a href="/2025/12/27/%E5%B0%9D%E8%AF%95%E4%BE%BF%E6%8D%B7%E6%9B%B4%E6%96%B0%E5%8D%9A%E5%AE%A2/">尝试便捷更新博客</a>
+          </li>
+        
+          <li>
+            <a href="/2025/12/26/react%E9%A1%B9%E7%9B%AE/">服务器（centos）尝试hexo和踩坑</a>
+          </li>
+        
+          <li>
+            <a href="/2025/12/26/%E6%9C%8D%E5%8A%A1%E5%99%A8%EF%BC%88centos%EF%BC%89%E5%B0%9D%E8%AF%95hexo%E5%92%8C%E8%B8%A9%E5%9D%91/">服务器（centos）尝试hexo和踩坑</a>
+          </li>
+        
+          <li>
+            <a href="/2025/08/16/uniapp+vue3%20%E7%BC%96%E8%AF%91%E5%BE%AE%E4%BF%A1%E5%B0%8F%E7%A8%8B%E5%BA%8F/">服务器（centos）尝试hexo和踩坑</a>
+          </li>
+        
+      </ul>
+    </div>
+  </aside>
+
+  
+    
+  
+    
+  
+</div>
+      </div>
+      <footer id="colophon" role="contentinfo">
+    <p>&copy; 2026 xsx
+    All rights reserved.</p>
+    <p>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></p>
+</footer>
+    <script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"1","bdMiniList":false,"bdPic":"","bdStyle":"2","bdSize":"16"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='/js/share.js'];</script>
+
+<script src="/js/jquery-3.3.1.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+<script src="/js/navigation.js"></script>
+
+<div id="bg"></div>
+
+  </div>
+</body>
+</html>
