@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <meta name="description" content="描述" />
+  
+
+  
+  <meta name="keywords" content="关键词1,关键词2" />
+  
+  
+  
+  
+  
+  
+  <title>svn迁移 | 谢某</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="SVN 仓库迁移实战：dump&#x2F;load、分批传输与权限切换 内网 Subversion 实例的整体迁移记录：仓库 dump&#x2F;load、大仓库按版本区间分段、账号与权限文件迁移、svnWebUI 管理端重建。文中域名、IP、账号、仓库名、路径均为示例（svn.example.com &#x2F; 192.0.2.x &#x2F; admin_svn &#x2F; project">
+<meta property="og:type" content="article">
+<meta property="og:title" content="svn迁移">
+<meta property="og:url" content="https://xie-shao-xi.github.io/2026/11/26/svn/index.html">
+<meta property="og:site_name" content="谢某">
+<meta property="og:description" content="SVN 仓库迁移实战：dump&#x2F;load、分批传输与权限切换 内网 Subversion 实例的整体迁移记录：仓库 dump&#x2F;load、大仓库按版本区间分段、账号与权限文件迁移、svnWebUI 管理端重建。文中域名、IP、账号、仓库名、路径均为示例（svn.example.com &#x2F; 192.0.2.x &#x2F; admin_svn &#x2F; project">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-11-26T02:51:50.000Z">
+<meta property="article:modified_time" content="2026-11-26T09:26:55.711Z">
+<meta property="article:author" content="xsx">
+<meta property="article:tag" content="关键词1,关键词2">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/css/images/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+  
+  <!-- baidu webmaster push -->
+  <script src='//push.zhanzhang.baidu.com/push.js'></script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body class="home blog custom-background custom-font-enabled single-author">
+  <div id="page" class="hfeed site">
+      <header id="masthead" class="site-header" role="banner">
+    <hgroup>
+      <h1 class="site-title">
+        <a href="/" title="谢某" rel="home">谢某</a>
+      </h1>
+      
+        <h2 class="site-description hitokoto"></h2>
+        <script type="text/javascript" src="https://v1.hitokoto.cn/?encode=js"></script>
+      
+    </hgroup>
+
+    <nav id="site-navigation" class="main-navigation" role="navigation">
+            <button class="menu-toggle">菜单</button>
+            <a class="assistive-text" href="/#content" title="跳至内容">跳至内容</a><!--TODO-->
+            <div class="menu-main-container">
+                <ul id="menu-main" class="nav-menu">
+                
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="/">首页</a></li>
+                
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="/archives">归档</a></li>
+                
+                </ul>
+            </div>
+    </nav>
+</header>
+
+      <div id="main" class="wrapper">
+        <div id="primary" class="site-content"><div id="content" role="main"><article id="post-svn" class="post-svn post type-post status-publish format-standard hentry">
+    <!---->
+
+      <header class="entry-header">
+        
+        
+  
+    <h1 class="entry-title article-title">
+      svn迁移
+    </h1>
+  
+
+        
+        <div class="comments-link">
+            
+            <!-- <a href="javascript:void(0);" data-url="https://xie-shao-xi.github.io/2026/11/26/svn/" data-id="cmwxcm90y0005ukntb0j37d80" class="leave-reply bdsharebuttonbox" data-cmd="more">Share</a> -->
+        </div><!-- .comments-link -->
+      </header><!-- .entry-header -->
+
+    <div class="entry-content">
+      
+        <h1 id="SVN-仓库迁移实战：dump-load、分批传输与权限切换"><a href="#SVN-仓库迁移实战：dump-load、分批传输与权限切换" class="headerlink" title="SVN 仓库迁移实战：dump&#x2F;load、分批传输与权限切换"></a>SVN 仓库迁移实战：dump&#x2F;load、分批传输与权限切换</h1><blockquote>
+<p>内网 Subversion 实例的整体迁移记录：仓库 dump&#x2F;load、大仓库按版本区间分段、账号与权限文件迁移、svnWebUI 管理端重建。<br>文中域名、IP、账号、仓库名、路径均为示例（<code>svn.example.com</code> &#x2F; <code>192.0.2.x</code> &#x2F; <code>admin_svn</code> &#x2F; <code>project-a</code>），请替换为实际环境。</p>
+</blockquote>
+<h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p><strong>适用场景</strong>：内网自建 Subversion，采用 <code>svnserve</code> 模式（非 Apache <code>mod_dav_svn</code>），配套 svnWebUI 管理端与 Nginx 反向代理；服务器无法访问外网，需离线安装；仓库位于独立数据盘。</p>
+<p><strong>环境</strong>：ARM64（aarch64）+ 类 RHEL8（el8）发行版；Subversion 1.12.2；新旧服务器版本一致，中间通过堡垒机中转，单文件下载上限 20 GB。</p>
+<p><strong>核心结论</strong>：</p>
+<ol>
+<li><strong>仓库使用 <code>svnadmin dump</code> &#x2F; <code>svnadmin load</code> 迁移</strong>，不直接拷贝目录，便于压缩传输、按版本分段与逐段校验。</li>
+<li><strong>大仓库按版本区间分段</strong>导出，否则单个 dump 文件可能超过中转限制。</li>
+<li><strong>仓库之外的四类数据必须一并迁移</strong>：<code>conf</code>&#x2F;<code>hooks</code>、全局 <code>authz</code>&#x2F;<code>passwd</code>、<code>svnWebUI</code> 的 <code>sqlite.db</code>，以及证书与配置文件；遗漏任何一类都会导致用户无法登录或权限失效。</li>
+</ol>
+<p>以下按”现状盘点 → 方案选型 → 备份 → 新服务器准备 → 加载 → 验证 → 切换域名 → 常见问题 → 检查清单”展开。</p>
+<hr>
+<h2 id="一、迁移前确认"><a href="#一、迁移前确认" class="headerlink" title="一、迁移前确认"></a>一、迁移前确认</h2><h3 id="1-1-盘点仓库现状"><a href="#1-1-盘点仓库现状" class="headerlink" title="1.1 盘点仓库现状"></a>1.1 盘点仓库现状</h3><p>先确认仓库数量、体积与最新版本号，用于估算备份时长和传输方式。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /data/svn/data/project/repo
+
+<span class="token comment"># 各仓库体积（authz、passwd 是文件，不是仓库）</span>
+<span class="token function">du</span> <span class="token parameter variable">-sh</span> */
+
+<span class="token comment"># 各仓库最新版本号与最后一次提交信息</span>
+<span class="token keyword">for</span> <span class="token for-or-select variable">r</span> <span class="token keyword">in</span> project-a project-b project-c project-d project-e project-f<span class="token punctuation">;</span> <span class="token keyword">do</span>
+  <span class="token builtin class-name">echo</span> <span class="token string">"=== <span class="token variable">$r</span> ==="</span>
+  <span class="token assign-left variable">rev</span><span class="token operator">=</span><span class="token variable"><span class="token variable">$(</span>svnlook youngest <span class="token string">"<span class="token variable">$r</span>"</span><span class="token variable">)</span></span>
+  <span class="token builtin class-name">echo</span> <span class="token string">"最新版本: r<span class="token variable">$rev</span>"</span>
+  svnlook info <span class="token parameter variable">-r</span> <span class="token string">"<span class="token variable">$rev</span>"</span> <span class="token string">"<span class="token variable">$r</span>"</span>
+  <span class="token builtin class-name">echo</span>
+<span class="token keyword">done</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><code>svnlook info</code> 输出作者、提交时间与提交说明，可据此判断各仓库最近是否仍在使用。若多数仓库的最后提交时间距今较远，可按 1.3 的方式先做不停机的全量预演。</p>
+<h3 id="1-2-需要迁移的四类内容"><a href="#1-2-需要迁移的四类内容" class="headerlink" title="1.2 需要迁移的四类内容"></a>1.2 需要迁移的四类内容</h3><table>
+<thead>
+<tr>
+<th>内容</th>
+<th>旧服务器位置</th>
+<th>迁移方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>仓库数据</td>
+<td><code>repo/&lt;仓库名&gt;</code></td>
+<td><code>svnadmin dump</code> → <code>svnadmin load</code></td>
+</tr>
+<tr>
+<td>仓库配置与钩子</td>
+<td><code>repo/&lt;仓库名&gt;/conf</code>、<code>repo/&lt;仓库名&gt;/hooks</code></td>
+<td><code>tar</code> 打包 → 解压覆盖</td>
+</tr>
+<tr>
+<td>全局账号与权限</td>
+<td><code>repo/authz</code>、<code>repo/passwd</code></td>
+<td><code>tar</code> 打包 → 解压 → 修正权限位</td>
+</tr>
+<tr>
+<td>Web 管理端数据</td>
+<td><code>project/sqlite.db</code>、<code>log</code>、<code>temp</code></td>
+<td><code>tar</code> 打包 → 解压 → 修正属主</td>
+</tr>
+</tbody></table>
+<p>注意 <code>authz</code>&#x2F;<code>passwd</code> 位于仓库根目录（<code>/data/svn/data/project/repo/</code>），不在单个仓库内；各仓库 <code>conf/svnserve.conf</code> 通过相对路径引用它们，因此解压后需要确认相对路径仍然有效。</p>
+<h3 id="1-3-是否需要停机"><a href="#1-3-是否需要停机" class="headerlink" title="1.3 是否需要停机"></a>1.3 是否需要停机</h3><p>两种做法：</p>
+<ul>
+<li><strong>仓库最近无提交</strong>：可以不停机完成全量 dump&#x2F;load 预演，切换域名前再补一次增量（见 8.7），最后统一停止旧服务。</li>
+<li><strong>仓库仍在活跃使用</strong>：建议在约定窗口内停止 <code>svnserve</code> 与 <code>svnWebUI</code> 后再 dump，避免 dump 过程中产生新版本导致与 <code>conf</code> 时间点不一致。</li>
+</ul>
+<p>无论哪种方式，<strong>域名切换完成前旧服务不要重新对外开放写入</strong>。</p>
+<hr>
+<h2 id="二、方案选型"><a href="#二、方案选型" class="headerlink" title="二、方案选型"></a>二、方案选型</h2><table>
+<thead>
+<tr>
+<th></th>
+<th>方案 A：一次性全量 dump</th>
+<th>方案 B：按版本区间分段 dump</th>
+<th>方案 C：服务器间直接 rsync</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>适用</td>
+<td>单仓库体积小于中转上限</td>
+<td>大仓库，单个 dump 超过 20 GB</td>
+<td>新旧服务器网络互通，不经堡垒机</td>
+</tr>
+<tr>
+<td>传输</td>
+<td>中转机上传下载</td>
+<td>分段后分别传输、分别 load</td>
+<td><code>rsync</code> 直接推送</td>
+</tr>
+<tr>
+<td>复杂度</td>
+<td>低</td>
+<td>中，需保证 load 顺序</td>
+<td>低，但要求网络可达</td>
+</tr>
+<tr>
+<td>本次采用</td>
+<td>小仓库</td>
+<td>大仓库</td>
+<td>备选</td>
+</tr>
+</tbody></table>
+<p>分段的核心是 <code>--deltas --incremental</code>：第一段使用 <code>--deltas</code>，后续段追加 <code>--incremental</code>，<code>load</code> 时严格按顺序执行，否则版本号会错乱。</p>
+<hr>
+<h2 id="三、备份（旧服务器）"><a href="#三、备份（旧服务器）" class="headerlink" title="三、备份（旧服务器）"></a>三、备份（旧服务器）</h2><h3 id="3-1-准备备份目录"><a href="#3-1-准备备份目录" class="headerlink" title="3.1 准备备份目录"></a>3.1 准备备份目录</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">mkdir</span> <span class="token parameter variable">-p</span> /data/svn-dump
+<span class="token function">sudo</span> <span class="token function">chown</span> admin_svn:admin_svn /data/svn-dump<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<h3 id="3-2-记录版本基线"><a href="#3-2-记录版本基线" class="headerlink" title="3.2 记录版本基线"></a>3.2 记录版本基线</h3><p>备份前记录各仓库最新版本号，加载完成后用于比对。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /data/svn/data/project/repo
+<span class="token keyword">for</span> <span class="token for-or-select variable">r</span> <span class="token keyword">in</span> project-a project-b project-c project-d project-e project-f<span class="token punctuation">;</span> <span class="token keyword">do</span>
+  <span class="token builtin class-name">echo</span> <span class="token string">"<span class="token variable">$r</span>: r<span class="token variable"><span class="token variable">$(</span>svnlook youngest <span class="token string">"<span class="token variable">$r</span>"</span><span class="token variable">)</span></span>"</span>
+<span class="token keyword">done</span> <span class="token operator">|</span> <span class="token function">tee</span> /tmp/svn-youngest-before.txt<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="3-3-打包配置与钩子"><a href="#3-3-打包配置与钩子" class="headerlink" title="3.3 打包配置与钩子"></a>3.3 打包配置与钩子</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /data/svn/data/project/repo
+
+<span class="token comment"># 各仓库的 conf 与 hooks</span>
+<span class="token keyword">for</span> <span class="token for-or-select variable">r</span> <span class="token keyword">in</span> project-a project-b project-c project-d project-e project-f<span class="token punctuation">;</span> <span class="token keyword">do</span>
+  <span class="token function">tar</span> czf /data/svn-dump/<span class="token variable">$&#123;r&#125;</span>-conf.tar.gz <span class="token parameter variable">-C</span> <span class="token string">"<span class="token variable">$r</span>"</span> conf hooks
+<span class="token keyword">done</span>
+
+<span class="token comment"># 全局账号与权限文件（含敏感信息，注意保管）</span>
+<span class="token function">tar</span> czf /data/svn-dump/svn-global-conf.tar.gz authz <span class="token function">passwd</span>
+
+<span class="token function">ls</span> <span class="token parameter variable">-lh</span> /data/svn-dump/*-conf.tar.gz /data/svn-dump/svn-global-conf.tar.gz<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="3-4-小仓库直接-dump"><a href="#3-4-小仓库直接-dump" class="headerlink" title="3.4 小仓库直接 dump"></a>3.4 小仓库直接 dump</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /data/svn/data/project/repo
+
+<span class="token keyword">for</span> <span class="token for-or-select variable">r</span> <span class="token keyword">in</span> project-a project-b project-c<span class="token punctuation">;</span> <span class="token keyword">do</span>
+  <span class="token builtin class-name">echo</span> <span class="token string">">>> <span class="token variable"><span class="token variable">$(</span><span class="token function">date</span> <span class="token string">'+%F %T'</span><span class="token variable">)</span></span> dumping <span class="token variable">$r</span> ..."</span>
+  svnadmin dump <span class="token string">"<span class="token variable">$r</span>"</span> <span class="token parameter variable">--deltas</span> <span class="token operator">|</span> <span class="token function">gzip</span> <span class="token parameter variable">-1</span> <span class="token operator">></span> /data/svn-dump/<span class="token variable">$&#123;r&#125;</span>.dump.gz
+  <span class="token builtin class-name">echo</span> <span class="token string">">>> <span class="token variable"><span class="token variable">$(</span><span class="token function">date</span> <span class="token string">'+%F %T'</span><span class="token variable">)</span></span> <span class="token variable">$r</span> 完成"</span>
+  <span class="token function">ls</span> <span class="token parameter variable">-lh</span> /data/svn-dump/<span class="token variable">$&#123;r&#125;</span>.dump.gz
+<span class="token keyword">done</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><code>--deltas</code> 让 dump 以增量表示存储，体积明显小于默认的全量表示；<code>gzip -1</code> 以较低压缩率换取更高的压缩速度，适合大仓库。</p>
+<h3 id="3-5-大仓库后台-dump"><a href="#3-5-大仓库后台-dump" class="headerlink" title="3.5 大仓库后台 dump"></a>3.5 大仓库后台 dump</h3><p>单个仓库 dump 可能持续数小时，放入后台执行并记录日志：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">nohup</span> <span class="token function">bash</span> <span class="token parameter variable">-c</span> <span class="token string">'
+  cd /data/svn/data/project/repo
+  for r in project-d project-e; do
+    echo ">>> $(date) dumping $r"
+    svnadmin dump "$r" --deltas | gzip -1 > /data/svn-dump/$&#123;r&#125;.dump.gz
+    echo ">>> $(date) $r done"
+  done
+'</span> <span class="token operator">></span> /data/svn-dump/dump.log <span class="token operator"><span class="token file-descriptor important">2</span>></span><span class="token file-descriptor important">&amp;1</span> <span class="token operator">&amp;</span>
+
+<span class="token function">tail</span> <span class="token parameter variable">-f</span> /data/svn-dump/dump.log<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="3-6-按版本区间分段-dump"><a href="#3-6-按版本区间分段-dump" class="headerlink" title="3.6 按版本区间分段 dump"></a>3.6 按版本区间分段 dump</h3><p>当单个仓库的 dump 文件超过中转限制时，按版本区间切分。以下示例将仓库拆为 <code>0</code>、<code>1-5</code>、<code>6-10</code>、<code>11</code>、<code>12</code> 五段：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">nohup</span> <span class="token function">bash</span> <span class="token parameter variable">-c</span> <span class="token string">'
+REPO=/data/svn/data/project/repo/project-d
+DUMP_DIR=/data/svn-dump
+LOG=$DUMP_DIR/dump_project_d.log
+
+echo ">>> $(date) start 0:0" >> "$LOG"
+(svnadmin dump "$REPO" -r 0 --deltas | gzip -1 > "$DUMP_DIR/project-d.0.dump.gz") >> "$LOG" 2>&amp;1
+
+echo ">>> $(date) start 1:5" >> "$LOG"
+(svnadmin dump "$REPO" -r 1:5 --deltas --incremental | gzip -1 > "$DUMP_DIR/project-d.1-5.dump.gz") >> "$LOG" 2>&amp;1
+
+echo ">>> $(date) start 6:10" >> "$LOG"
+(svnadmin dump "$REPO" -r 6:10 --deltas --incremental | gzip -1 > "$DUMP_DIR/project-d.6-10.dump.gz") >> "$LOG" 2>&amp;1
+
+echo ">>> $(date) start 11" >> "$LOG"
+(svnadmin dump "$REPO" -r 11 --deltas --incremental | gzip -1 > "$DUMP_DIR/project-d.11.dump.gz") >> "$LOG" 2>&amp;1
+
+echo ">>> $(date) start 12" >> "$LOG"
+(svnadmin dump "$REPO" -r 12 --deltas --incremental | gzip -1 > "$DUMP_DIR/project-d.12.dump.gz") >> "$LOG" 2>&amp;1
+
+echo ">>> $(date) all done" >> "$LOG"
+'</span> <span class="token operator">&amp;</span>
+
+<span class="token function">tail</span> <span class="token parameter variable">-f</span> /data/svn-dump/dump_project_d.log<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>分段原则：</p>
+<ul>
+<li>段与段之间必须首尾相接，不重不漏（<code>0</code>、<code>1-5</code>、<code>6-10</code>…）；</li>
+<li>只需第一段不带 <code>--incremental</code>，其余段都带；</li>
+<li>某一段体积仍超限时，继续按更小的版本区间细分，不要改用 <code>split</code> 切分 dump 文件：分片无法单独校验，出问题时难以定位。</li>
+</ul>
+<h3 id="3-7-校验与传输"><a href="#3-7-校验与传输" class="headerlink" title="3.7 校验与传输"></a>3.7 校验与传输</h3><p>在旧服务器生成校验值，下载到本地、上传到新服务器后分别校验，三处结果必须一致。校验文件使用相对路径记录，便于在新服务器同目录下复核：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /data/svn-dump
+md5sum *.dump.gz <span class="token operator">></span> md5.txt
+
+<span class="token comment"># 新服务器：将 md5.txt 与 dump 文件放在同一目录后执行</span>
+<span class="token builtin class-name">cd</span> /home/admin_svn/svn-import
+md5sum <span class="token parameter variable">-c</span> md5.txt<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>若单个文件仍需经堡垒机中转：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">split</span> <span class="token parameter variable">-b</span> 5000M <span class="token parameter variable">-d</span> <span class="token parameter variable">-a</span> <span class="token number">3</span> project-d.0.dump.gz project-d.0.part_
+<span class="token function">cat</span> project-d.0.part_* <span class="token operator">></span> project-d.0.dump.gz<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<p>Windows 侧可用 <code>certutil -hashfile &lt;文件&gt; MD5</code> 计算校验值。</p>
+<hr>
+<h2 id="四、新服务器准备"><a href="#四、新服务器准备" class="headerlink" title="四、新服务器准备"></a>四、新服务器准备</h2><h3 id="4-1-数据盘配置为-LVM-并挂载到-data"><a href="#4-1-数据盘配置为-LVM-并挂载到-data" class="headerlink" title="4.1 数据盘配置为 LVM 并挂载到 &#x2F;data"></a>4.1 数据盘配置为 LVM 并挂载到 &#x2F;data</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> pvcreate /dev/vdb
+<span class="token function">sudo</span> vgcreate vg_data /dev/vdb
+<span class="token function">sudo</span> lvcreate <span class="token parameter variable">-l</span> <span class="token number">100</span>%FREE <span class="token parameter variable">-n</span> lv_data vg_data
+
+<span class="token function">sudo</span> mkfs.xfs /dev/vg_data/lv_data
+
+<span class="token function">sudo</span> <span class="token function">mkdir</span> <span class="token parameter variable">-p</span> /data
+<span class="token function">sudo</span> <span class="token function">mount</span> /dev/vg_data/lv_data /data<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><code>fstab</code> 中使用 UUID（设备名可能变化）：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> blkid /dev/vg_data/lv_data
+<span class="token function">sudo</span> <span class="token function">cp</span> /etc/fstab /etc/fstab.bak
+<span class="token function">sudo</span> <span class="token function">vim</span> /etc/fstab
+<span class="token comment"># 末尾追加（UUID 替换为上一条命令输出的值）</span>
+<span class="token comment"># UUID=【你的UUID】 /data xfs defaults 0 0</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">mount</span> <span class="token parameter variable">-a</span>
+<span class="token function">df</span> <span class="token parameter variable">-h</span> /data<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<h3 id="4-2-离线安装-Subversion"><a href="#4-2-离线安装-Subversion" class="headerlink" title="4.2 离线安装 Subversion"></a>4.2 离线安装 Subversion</h3><p>服务器无法访问外网，需提前下载 rpm 及其依赖（以 Kylin V10 &#x2F; aarch64 为例）：</p>
+<pre class="line-numbers language-none"><code class="language-none">apr-1.7.0-4.ky10.aarch64.rpm
+apr-util-1.6.1-14.ky10.aarch64.rpm
+httpd-2.4.43-13.p03.ky10.aarch64.rpm
+httpd-filesystem-2.4.43-13.p03.ky10.noarch.rpm
+httpd-help-2.4.43-13.p03.ky10.noarch.rpm
+httpd-tools-2.4.43-13.p03.ky10.aarch64.rpm
+libserf-1.3.9-14.ky10.aarch64.rpm
+mod_http2-1.15.13-1.ky10.aarch64.rpm
+subversion-1.12.2-4.ky10.aarch64.rpm
+utf8proc-2.5.0-1.ky10.aarch64.rpm
+web-assets-filesystem-5-1.ky10.noarch.rpm
+web-assets-httpd-5-1.ky10.noarch.rpm<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> yum localinstall *.rpm <span class="token parameter variable">--disablerepo</span><span class="token operator">=</span>* <span class="token parameter variable">-y</span>
+
+<span class="token comment"># 验证，应输出 1.12.2</span>
+svnserve <span class="token parameter variable">--version</span>
+svnadmin <span class="token parameter variable">--version</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><code>httpd</code> 仅为满足 <code>subversion</code> 的 rpm 依赖，本方案使用 <code>svnserve</code> 模式，不需要 Apache。若安装时被自动启用，关闭即可：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> systemctl stop httpd
+<span class="token function">sudo</span> systemctl disable httpd<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<h3 id="4-3-创建运行账号与目录"><a href="#4-3-创建运行账号与目录" class="headerlink" title="4.3 创建运行账号与目录"></a>4.3 创建运行账号与目录</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">groupadd</span> admin_svn
+<span class="token function">sudo</span> <span class="token function">useradd</span> <span class="token parameter variable">-g</span> admin_svn <span class="token parameter variable">-m</span> <span class="token parameter variable">-d</span> /home/admin_svn <span class="token parameter variable">-s</span> /bin/bash admin_svn
+
+<span class="token comment"># 目录结构与旧服务器保持一致</span>
+<span class="token function">sudo</span> <span class="token function">mkdir</span> <span class="token parameter variable">-p</span> /data/svn/data/project/repo
+<span class="token function">sudo</span> <span class="token function">chown</span> <span class="token parameter variable">-R</span> admin_svn:admin_svn /data/svn<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>路径必须与旧服务器一致：各仓库 <code>conf/svnserve.conf</code> 中以相对路径引用全局 <code>authz</code>&#x2F;<code>passwd</code>，<code>svnWebUI</code> 的启动参数 <code>--project.home</code> 也依赖该结构。</p>
+<h3 id="4-4-放行端口"><a href="#4-4-放行端口" class="headerlink" title="4.4 放行端口"></a>4.4 放行端口</h3><p><code>svn://</code> 使用 3690，管理端与仓库浏览通过 Nginx 的 443。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> iptables <span class="token parameter variable">-L</span> <span class="token parameter variable">-n</span> --line-numbers
+
+<span class="token function">sudo</span> iptables <span class="token parameter variable">-I</span> INPUT <span class="token number">19</span> <span class="token parameter variable">-p</span> tcp <span class="token parameter variable">-s</span> <span class="token number">0.0</span>.0.0/0 <span class="token parameter variable">--dport</span> <span class="token number">443</span>  <span class="token parameter variable">-j</span> ACCEPT
+<span class="token function">sudo</span> iptables <span class="token parameter variable">-I</span> INPUT <span class="token number">20</span> <span class="token parameter variable">-p</span> tcp <span class="token parameter variable">-s</span> <span class="token number">0.0</span>.0.0/0 <span class="token parameter variable">--dport</span> <span class="token number">3690</span> <span class="token parameter variable">-j</span> ACCEPT
+
+<span class="token function">sudo</span> <span class="token function">service</span> iptables save
+<span class="token function">sudo</span> iptables <span class="token parameter variable">-L</span> <span class="token parameter variable">-n</span> --line-numbers<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<blockquote>
+<p>安全建议：3690 仅对内网网段开放；如不需要直连 <code>svn://</code>，可只放行 443 并通过 Nginx 代理。</p>
+</blockquote>
+<p><code>firewalld</code> 环境：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> firewall-cmd --add-port<span class="token operator">=</span><span class="token number">443</span>/tcp  <span class="token parameter variable">--permanent</span>
+<span class="token function">sudo</span> firewall-cmd --add-port<span class="token operator">=</span><span class="token number">3690</span>/tcp <span class="token parameter variable">--permanent</span>
+<span class="token function">sudo</span> firewall-cmd <span class="token parameter variable">--reload</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="4-5-编译安装-Nginx"><a href="#4-5-编译安装-Nginx" class="headerlink" title="4.5 编译安装 Nginx"></a>4.5 编译安装 Nginx</h3><p>svnWebUI 的页面通过 Nginx 提供 HTTPS 与反向代理。先确认编译依赖：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gcc <span class="token parameter variable">--version</span>
+<span class="token function">make</span> <span class="token parameter variable">--version</span>
+<span class="token function">rpm</span> <span class="token parameter variable">-q</span> pcre-devel zlib-devel openssl-devel<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">tar</span> <span class="token parameter variable">-xzf</span> nginx-1.30.6.tar.gz
+<span class="token builtin class-name">cd</span> nginx-1.30.6
+./configure <span class="token parameter variable">--prefix</span><span class="token operator">=</span>/usr/local/nginx <span class="token punctuation">\</span>
+  --with-http_ssl_module <span class="token punctuation">\</span>
+  --with-http_stub_status_module <span class="token punctuation">\</span>
+  --with-http_realip_module
+<span class="token function">make</span> -j<span class="token variable"><span class="token variable">$(</span>nproc<span class="token variable">)</span></span>
+<span class="token function">sudo</span> <span class="token function">make</span> <span class="token function">install</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>证书放置：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">mkdir</span> <span class="token parameter variable">-p</span> /usr/local/nginx/conf/cert
+<span class="token function">sudo</span> <span class="token function">tar</span> xzf ~/cert-current.tar.gz <span class="token parameter variable">-C</span> /usr/local/nginx/conf/cert/
+<span class="token function">sudo</span> <span class="token function">chmod</span> <span class="token number">600</span> /usr/local/nginx/conf/cert/server.key<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p><code>nginx.conf</code> 中与 SVN 管理端相关的配置（省略与本次迁移无关的 location）：</p>
+<pre class="line-numbers language-nginx" data-language="nginx"><code class="language-nginx"><span class="token directive"><span class="token keyword">server</span></span> <span class="token punctuation">&#123;</span>
+    <span class="token directive"><span class="token keyword">listen</span>       <span class="token number">443</span> ssl</span><span class="token punctuation">;</span>
+    <span class="token comment"># 域名与 IP 同时写入，便于切换前用 IP 验证</span>
+    <span class="token directive"><span class="token keyword">server_name</span>  svn.example.com 192.0.2.10</span><span class="token punctuation">;</span>
+
+    <span class="token directive"><span class="token keyword">ssl_certificate</span>      /usr/local/nginx/conf/cert/server.pem</span><span class="token punctuation">;</span>
+    <span class="token directive"><span class="token keyword">ssl_certificate_key</span>  /usr/local/nginx/conf/cert/server.key</span><span class="token punctuation">;</span>
+    <span class="token directive"><span class="token keyword">ssl_protocols</span>        TLSv1.2</span><span class="token punctuation">;</span>
+    <span class="token directive"><span class="token keyword">ssl_ciphers</span>          HIGH:!aNULL:!MD5:!kRSA</span><span class="token punctuation">;</span>
+    <span class="token directive"><span class="token keyword">ssl_prefer_server_ciphers</span> <span class="token boolean">on</span></span><span class="token punctuation">;</span>
+
+    <span class="token directive"><span class="token keyword">location</span> /</span> <span class="token punctuation">&#123;</span>
+        <span class="token directive"><span class="token keyword">proxy_pass</span>         http://127.0.0.1:8080</span><span class="token punctuation">;</span>
+        <span class="token directive"><span class="token keyword">proxy_redirect</span>     http:// https://</span><span class="token punctuation">;</span>
+        <span class="token directive"><span class="token keyword">proxy_set_header</span>   Host            <span class="token variable">$host</span>:<span class="token variable">$server_port</span></span><span class="token punctuation">;</span>
+        <span class="token directive"><span class="token keyword">proxy_set_header</span>   X-Real-IP       <span class="token variable">$remote_addr</span></span><span class="token punctuation">;</span>
+        <span class="token directive"><span class="token keyword">proxy_set_header</span>   X-Forwarded-For <span class="token variable">$proxy_add_x_forwarded_for</span></span><span class="token punctuation">;</span>
+        <span class="token directive"><span class="token keyword">client_max_body_size</span> <span class="token number">2048m</span></span><span class="token punctuation">;</span>
+        <span class="token directive"><span class="token keyword">proxy_connect_timeout</span> <span class="token number">60s</span></span><span class="token punctuation">;</span>
+        <span class="token directive"><span class="token keyword">proxy_read_timeout</span>    <span class="token number">600s</span></span><span class="token punctuation">;</span>
+        <span class="token directive"><span class="token keyword">proxy_send_timeout</span>    <span class="token number">600s</span></span><span class="token punctuation">;</span>
+        <span class="token directive"><span class="token keyword">if</span> (-d <span class="token variable">$request_filename</span>)</span> <span class="token punctuation">&#123;</span>
+            <span class="token directive"><span class="token keyword">rewrite</span> ^/(.*)([^/])$ /<span class="token variable">$1</span><span class="token variable">$2</span>/ permanent</span><span class="token punctuation">;</span>
+        <span class="token punctuation">&#125;</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> /usr/local/nginx/sbin/nginx <span class="token parameter variable">-t</span>
+<span class="token function">sudo</span> /usr/local/nginx/sbin/nginx<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<h3 id="4-6-安装-JDK（svnWebUI-依赖）"><a href="#4-6-安装-JDK（svnWebUI-依赖）" class="headerlink" title="4.6 安装 JDK（svnWebUI 依赖）"></a>4.6 安装 JDK（svnWebUI 依赖）</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">mkdir</span> <span class="token parameter variable">-p</span> /usr/local/java
+<span class="token function">sudo</span> <span class="token function">chown</span> <span class="token parameter variable">-R</span> <span class="token variable"><span class="token variable">$(</span><span class="token function">whoami</span><span class="token variable">)</span></span><span class="token builtin class-name">:</span><span class="token variable"><span class="token variable">$(</span><span class="token function">whoami</span><span class="token variable">)</span></span> /usr/local/java
+<span class="token comment"># 通过堡垒机上传 JDK 压缩包后</span>
+<span class="token function">sudo</span> <span class="token function">tar</span> <span class="token parameter variable">-zxvf</span> OpenJDK11U-jdk_aarch64_linux_hotspot_11.0.32.1_1.tar.gz <span class="token parameter variable">-C</span> /usr/local/java/
+<span class="token function">sudo</span> <span class="token function">chmod</span> <span class="token number">755</span> /usr/local/java<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>在 <code>/etc/profile</code> 末尾追加：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">export</span> <span class="token assign-left variable">JAVA_HOME</span><span class="token operator">=</span>/usr/local/java/jdk-11.0.32.1+1
+<span class="token builtin class-name">export</span> <span class="token assign-left variable"><span class="token environment constant">PATH</span></span><span class="token operator">=</span><span class="token variable">$JAVA_HOME</span>/bin:<span class="token environment constant">$PATH</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">source</span> /etc/profile
+<span class="token function">java</span> <span class="token parameter variable">-version</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<hr>
+<h2 id="五、加载数据（新服务器）"><a href="#五、加载数据（新服务器）" class="headerlink" title="五、加载数据（新服务器）"></a>五、加载数据（新服务器）</h2><h3 id="5-1-单个仓库的完整流程"><a href="#5-1-单个仓库的完整流程" class="headerlink" title="5.1 单个仓库的完整流程"></a>5.1 单个仓库的完整流程</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /data/svn/data/project/repo
+
+svnadmin create project-a
+<span class="token function">gzip</span> <span class="token parameter variable">-dc</span> /home/admin_svn/svn-import/project-a.dump.gz <span class="token operator">|</span> svnadmin load project-a
+svnadmin verify project-a
+
+<span class="token comment"># 恢复该仓库的 conf 与 hooks</span>
+<span class="token function">tar</span> xzf /home/admin_svn/svn-import/project-a-conf.tar.gz <span class="token parameter variable">-C</span> /data/svn/data/project/repo/project-a
+
+<span class="token comment"># 确认相对路径未被改变</span>
+<span class="token function">grep</span> <span class="token parameter variable">-E</span> <span class="token string">'authz-db|password-db'</span> /data/svn/data/project/repo/project-a/conf/svnserve.conf
+<span class="token comment"># 应指向 ../../authz 与 ../../passwd，且未被注释</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><code>svnadmin verify</code> 会重放全部版本，仓库越大耗时越长，但这是确认 dump 完整性的直接方式，不建议跳过。</p>
+<h3 id="5-2-分段仓库按顺序-load"><a href="#5-2-分段仓库按顺序-load" class="headerlink" title="5.2 分段仓库按顺序 load"></a>5.2 分段仓库按顺序 load</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /data/svn/data/project/repo
+svnadmin create project-d
+
+<span class="token function">nohup</span> <span class="token function">bash</span> <span class="token parameter variable">-c</span> <span class="token string">'
+  cd /data/svn/data/project/repo
+  for f in project-d.0 project-d.1-5 project-d.6-10 project-d.11 project-d.12; do
+    echo ">>> $(date) loading $f ..."
+    gzip -dc /home/admin_svn/svn-import/$&#123;f&#125;.dump.gz | svnadmin load /data/svn/data/project/repo/project-d
+    echo ">>> $(date) $f done"
+  done
+  echo ">>> $(date) all load done, starting verify ..."
+  svnadmin verify /data/svn/data/project/repo/project-d
+  echo ">>> $(date) verify done"
+'</span> <span class="token operator">></span> /home/admin_svn/svn-import/load-project-d.log <span class="token operator"><span class="token file-descriptor important">2</span>></span><span class="token file-descriptor important">&amp;1</span> <span class="token operator">&amp;</span>
+
+<span class="token function">tail</span> <span class="token parameter variable">-f</span> /home/admin_svn/svn-import/load-project-d.log<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>顺序必须与 dump 时的版本区间顺序一致（<code>0</code> → <code>1-5</code> → <code>6-10</code> → <code>11</code> → <code>12</code>）。顺序错误或漏段时，<code>load</code> 会因版本号冲突失败或产生错误的历史。</p>
+<p>加载完成后可直接查看最新版本号：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">svnlook youngest /data/svn/data/project/repo/project-d<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>同时恢复该仓库的配置：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">tar</span> xzf /home/admin_svn/svn-import/project-d-conf.tar.gz <span class="token parameter variable">-C</span> /data/svn/data/project/repo/project-d
+<span class="token function">grep</span> <span class="token parameter variable">-E</span> <span class="token string">'authz-db|password-db'</span> /data/svn/data/project/repo/project-d/conf/svnserve.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<h3 id="5-3-恢复全局账号与权限"><a href="#5-3-恢复全局账号与权限" class="headerlink" title="5.3 恢复全局账号与权限"></a>5.3 恢复全局账号与权限</h3><p>只需执行一次，覆盖到仓库根目录：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">tar</span> xzf /home/admin_svn/svn-import/svn-global-conf.tar.gz <span class="token parameter variable">-C</span> /data/svn/data/project/repo
+
+<span class="token function">chmod</span> <span class="token number">600</span> /data/svn/data/project/repo/passwd
+<span class="token function">chmod</span> <span class="token number">644</span> /data/svn/data/project/repo/authz
+<span class="token function">ls</span> <span class="token parameter variable">-l</span> /data/svn/data/project/repo/authz /data/svn/data/project/repo/passwd<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>权限位需与旧服务器保持一致：<code>passwd</code> 含明文或哈希密码，仅属主可读；<code>authz</code> 需被 <code>svnserve</code> 进程可读。</p>
+<h3 id="5-4-版本比对"><a href="#5-4-版本比对" class="headerlink" title="5.4 版本比对"></a>5.4 版本比对</h3><p>全部加载完成后，与 3.2 记录的基线比对：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token keyword">for</span> <span class="token for-or-select variable">r</span> <span class="token keyword">in</span> project-a project-b project-c project-d project-e project-f<span class="token punctuation">;</span> <span class="token keyword">do</span>
+  <span class="token builtin class-name">echo</span> <span class="token string">"<span class="token variable">$r</span>: r<span class="token variable"><span class="token variable">$(</span>svnlook youngest <span class="token string">"/data/svn/data/project/repo/<span class="token variable">$r</span>"</span><span class="token variable">)</span></span>"</span>
+<span class="token keyword">done</span> <span class="token operator">|</span> <span class="token function">tee</span> ~/svn-youngest-after-load.txt
+
+<span class="token function">diff</span> ~/svn-youngest-before.txt ~/svn-youngest-after-load.txt<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><code>diff</code> 无输出表示各仓库版本号一致。</p>
+<h3 id="5-5-恢复-svnWebUI-数据"><a href="#5-5-恢复-svnWebUI-数据" class="headerlink" title="5.5 恢复 svnWebUI 数据"></a>5.5 恢复 svnWebUI 数据</h3><p>必须先恢复 <code>sqlite.db</code> 再首次启动 <code>svnWebUI</code>：管理端启动时可能按默认逻辑重写账号文件，顺序错误会导致 <code>authz</code>&#x2F;<code>passwd</code> 被覆盖。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">tar</span> xzf /home/admin_svn/svn-import/svnwebui-data.tar.gz <span class="token parameter variable">-C</span> /data/svn/data/project
+
+<span class="token builtin class-name">cd</span> /data/svn/data/project
+<span class="token function">chown</span> admin_svn:admin_svn sqlite.db
+<span class="token function">chmod</span> <span class="token number">640</span> sqlite.db
+<span class="token function">ls</span> <span class="token parameter variable">-l</span> sqlite.db<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<hr>
+<h2 id="六、运行与验证"><a href="#六、运行与验证" class="headerlink" title="六、运行与验证"></a>六、运行与验证</h2><h3 id="6-1-启动-svnserve"><a href="#6-1-启动-svnserve" class="headerlink" title="6.1 启动 svnserve"></a>6.1 启动 svnserve</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">svnserve <span class="token parameter variable">-d</span> <span class="token parameter variable">-r</span> /data/svn/data/project/repo --listen-port <span class="token number">3690</span>
+
+ss <span class="token parameter variable">-tlnp</span> <span class="token operator">|</span> <span class="token function">grep</span> <span class="token number">3690</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="6-2-验证仓库访问"><a href="#6-2-验证仓库访问" class="headerlink" title="6.2 验证仓库访问"></a>6.2 验证仓库访问</h3><p>用测试账号逐个仓库验证读取权限：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token keyword">for</span> <span class="token for-or-select variable">r</span> <span class="token keyword">in</span> project-a project-b project-c project-d project-e project-f<span class="token punctuation">;</span> <span class="token keyword">do</span>
+  <span class="token builtin class-name">echo</span> <span class="token string">"=== <span class="token variable">$r</span> ==="</span>
+  svn <span class="token function">ls</span> <span class="token string">"svn://localhost/<span class="token variable">$r</span>"</span> <span class="token parameter variable">--username</span> <span class="token operator">&lt;</span>测试账号<span class="token operator">></span>
+<span class="token keyword">done</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>验证日志与历史：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">svn log <span class="token parameter variable">-l</span> <span class="token number">5</span> svn://localhost/project-a <span class="token parameter variable">--username</span> <span class="token operator">&lt;</span>测试账号<span class="token operator">></span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h3 id="6-3-启动-svnWebUI"><a href="#6-3-启动-svnWebUI" class="headerlink" title="6.3 启动 svnWebUI"></a>6.3 启动 svnWebUI</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">nohup</span> <span class="token function">java</span> <span class="token parameter variable">-Xms512m</span> <span class="token parameter variable">-Xmx2g</span> <span class="token parameter variable">-Dfile.encoding</span><span class="token operator">=</span>UTF-8 <span class="token punctuation">\</span>
+  <span class="token parameter variable">-jar</span> /data/svn/svnWebUI-1.8.9.jar <span class="token punctuation">\</span>
+  <span class="token parameter variable">--server.port</span><span class="token operator">=</span><span class="token number">8080</span> <span class="token punctuation">\</span>
+  <span class="token parameter variable">--project.home</span><span class="token operator">=</span>/data/svn/data/project <span class="token punctuation">\</span>
+  <span class="token operator">></span> /data/svn/nohup.log <span class="token operator"><span class="token file-descriptor important">2</span>></span><span class="token file-descriptor important">&amp;1</span> <span class="token operator">&amp;</span>
+
+<span class="token function">tail</span> <span class="token parameter variable">-f</span> /data/svn/nohup.log<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>启动后确认账号文件未被覆盖：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">wc</span> <span class="token parameter variable">-c</span> /data/svn/data/project/repo/passwd /data/svn/data/project/repo/authz<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>与迁移前的字节数对比，若明显变小，说明被管理端重建，需要用备份文件恢复后重新检查管理端配置。</p>
+<h3 id="6-4-验证-HTTPS-与管理端"><a href="#6-4-验证-HTTPS-与管理端" class="headerlink" title="6.4 验证 HTTPS 与管理端"></a>6.4 验证 HTTPS 与管理端</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">curl</span> <span class="token parameter variable">-k</span> <span class="token parameter variable">-I</span> https://localhost<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>浏览器访问 <code>https://192.0.2.10/adminPage/login</code>，使用迁移前的管理员账号登录，确认用户列表、仓库列表与权限规则完整。</p>
+<h3 id="6-5-停止顺序"><a href="#6-5-停止顺序" class="headerlink" title="6.5 停止顺序"></a>6.5 停止顺序</h3><p>维护或回滚时按以下顺序停止：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">pkill</span> <span class="token parameter variable">-f</span> svnWebUI-1.8.9.jar
+<span class="token function">pkill</span> svnserve
+/usr/local/nginx/sbin/nginx <span class="token parameter variable">-s</span> quit<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>先停管理端与 <code>svnserve</code>，最后停 Nginx，避免代理层继续转发到已停止的服务。</p>
+<hr>
+<h2 id="七、切换域名与收尾"><a href="#七、切换域名与收尾" class="headerlink" title="七、切换域名与收尾"></a>七、切换域名与收尾</h2><ol>
+<li>提前与运维确认 DNS 切换方式与工单流程；</li>
+<li>切换前用 IP 完成第六节的全部验证；</li>
+<li>切换后将 <code>svnWebUI</code> 中记录的仓库地址、钩子脚本中的地址一并核对，避免仍指向旧 IP；</li>
+<li>通过域名验证管理端登录与 <code>svn checkout</code>；</li>
+<li>旧服务器保持停机但保留数据，作为回滚手段；</li>
+<li>观察一段时间后再清理旧服务器。</li>
+</ol>
+<p>回滚方式：DNS 切回旧服务器并启动旧服务。需要注意，切换后在新服务器上产生的新版本无法通过回滚带回旧服务器，因此回滚窗口应尽量短。</p>
+<hr>
+<h2 id="八、常见问题"><a href="#八、常见问题" class="headerlink" title="八、常见问题"></a>八、常见问题</h2><h3 id="8-1-能否直接拷贝仓库目录"><a href="#8-1-能否直接拷贝仓库目录" class="headerlink" title="8.1 能否直接拷贝仓库目录"></a>8.1 能否直接拷贝仓库目录</h3><p>可以在同版本、同路径的前提下用 <code>svnadmin hotcopy</code> 或直接复制目录，但要求两端路径完全一致、版本一致，且无法在传输中压缩和分段。使用 <code>dump</code>&#x2F;<code>load</code> 可以获得可校验的中间产物，并在加载时逐段确认，更适合跨机器、跨中转的迁移。</p>
+<h3 id="8-2-单个-dump-文件超过中转限制"><a href="#8-2-单个-dump-文件超过中转限制" class="headerlink" title="8.2 单个 dump 文件超过中转限制"></a>8.2 单个 dump 文件超过中转限制</h3><p>三种处理方式，按优先级：</p>
+<ol>
+<li>按版本区间分段 dump（3.6），最易校验；</li>
+<li><code>split</code> 分片传输后合并，合并后必须校验 md5&#x2F;sha256；</li>
+<li>新旧服务器网络互通时改用 <code>rsync</code> 直接传输，绕过堡垒机。</li>
+</ol>
+<h3 id="8-3-分段-load-顺序错误会怎样"><a href="#8-3-分段-load-顺序错误会怎样" class="headerlink" title="8.3 分段 load 顺序错误会怎样"></a>8.3 分段 load 顺序错误会怎样</h3><p><code>load</code> 会因版本号不连续报错，或把后续段加载到错误的版本上。判断方法：加载完成后用 <code>svnlook youngest</code> 与基线比对，并抽查 <code>svn log</code> 的版本号连续性。</p>
+<h3 id="8-4-恢复-conf-hooks-后相对路径失效"><a href="#8-4-恢复-conf-hooks-后相对路径失效" class="headerlink" title="8.4 恢复 conf&#x2F;hooks 后相对路径失效"></a>8.4 恢复 conf&#x2F;hooks 后相对路径失效</h3><p><code>svnserve.conf</code> 中的 <code>authz-db</code>、<code>password-db</code> 是相对 <code>conf/</code> 目录的路径。只要新服务器目录结构与旧服务器一致（<code>repo/&lt;仓库&gt;/conf</code> 与 <code>repo/authz</code>、<code>repo/passwd</code> 的相对关系不变），路径即有效。恢复后统一用以下命令确认：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">grep</span> <span class="token parameter variable">-E</span> <span class="token string">'authz-db|password-db'</span> /data/svn/data/project/repo/*/conf/svnserve.conf<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h3 id="8-5-迁移后用户无法登录"><a href="#8-5-迁移后用户无法登录" class="headerlink" title="8.5 迁移后用户无法登录"></a>8.5 迁移后用户无法登录</h3><p>依次确认：</p>
+<ol>
+<li>全局 <code>passwd</code> 是否恢复到位，权限是否为 <code>600</code>；</li>
+<li>各仓库 <code>svnserve.conf</code> 的 <code>password-db</code>、<code>authz-db</code> 是否指向正确的全局文件；</li>
+<li><code>svnserve</code> 进程是否有权限读取上述文件（<code>admin_svn</code> 属主）；</li>
+<li>若账号由 <code>svnWebUI</code> 维护，确认 <code>sqlite.db</code> 已恢复且启动顺序正确（5.5）。</li>
+</ol>
+<h3 id="8-6-svnWebUI-启动后账号或权限文件被改写"><a href="#8-6-svnWebUI-启动后账号或权限文件被改写" class="headerlink" title="8.6 svnWebUI 启动后账号或权限文件被改写"></a>8.6 svnWebUI 启动后账号或权限文件被改写</h3><p>管理端启动时可能依据数据库重建 <code>authz</code>&#x2F;<code>passwd</code>。规避方式：</p>
+<ul>
+<li>先恢复 <code>sqlite.db</code> 再启动管理端；</li>
+<li>启动后立即用 <code>wc -c</code> 对比文件大小；</li>
+<li>保留一份 <code>authz.bak.$(date +%F)</code>、<code>passwd.bak.$(date +%F)</code> 作为回退。</li>
+</ul>
+<h3 id="8-7-迁移期间有人提交"><a href="#8-7-迁移期间有人提交" class="headerlink" title="8.7 迁移期间有人提交"></a>8.7 迁移期间有人提交</h3><p>对仍在使用的仓库，在切换窗口内先停止服务，再以迁移前记录的基线版本为起点导出增量并加载（示例中基线为 r100）：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">svnadmin dump /data/svn/data/project/repo/project-a <span class="token punctuation">\</span>
+  <span class="token parameter variable">-r</span> <span class="token number">101</span>:HEAD <span class="token parameter variable">--deltas</span> <span class="token parameter variable">--incremental</span> <span class="token operator">|</span> <span class="token function">gzip</span> <span class="token parameter variable">-1</span> <span class="token operator">></span> /data/svn-dump/project-a.inc.dump.gz<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<p>加载顺序仍为”全量段 → 增量段”。</p>
+<h3 id="8-8-如何确认数据完整"><a href="#8-8-如何确认数据完整" class="headerlink" title="8.8 如何确认数据完整"></a>8.8 如何确认数据完整</h3><p>四项交叉验证：</p>
+<ul>
+<li><code>svnlook youngest</code> 与基线一致；</li>
+<li><code>svnadmin verify</code> 无报错；</li>
+<li><code>md5sum -c</code> 校验通过（旧服务器、本地、新服务器三处一致）；</li>
+<li><code>svn log</code> 抽查最新版本与提交人、提交说明。</li>
+</ul>
+<hr>
+<h2 id="九、检查清单"><a href="#九、检查清单" class="headerlink" title="九、检查清单"></a>九、检查清单</h2><h3 id="迁移前"><a href="#迁移前" class="headerlink" title="迁移前"></a>迁移前</h3><table>
+<thead>
+<tr>
+<th>#</th>
+<th>检查项</th>
+<th>命令 &#x2F; 位置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>仓库清单、体积、最新版本号已记录</td>
+<td><code>du -sh</code>、<code>svnlook youngest</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>各仓库 <code>conf</code>&#x2F;<code>hooks</code> 已打包</td>
+<td><code>/data/svn-dump/*-conf.tar.gz</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>全局 <code>authz</code>&#x2F;<code>passwd</code> 已打包</td>
+<td><code>svn-global-conf.tar.gz</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>svnWebUI</code> 数据已打包</td>
+<td><code>svnwebui-data.tar.gz</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>证书与 Nginx 配置已备份</td>
+<td><code>cert-current.tar.gz</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>新服务器 <code>/data</code> 已挂载并写入 <code>fstab</code></td>
+<td><code>df -h /data</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Subversion 已安装且版本一致</td>
+<td><code>svnserve --version</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>443 &#x2F; 3690 已放行</td>
+<td><code>iptables -L -n</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>校验值已生成并随文件传输</td>
+<td><code>md5sum -c</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>DNS 切换流程与联系人已确认</td>
+<td></td>
+</tr>
+</tbody></table>
+<h3 id="加载"><a href="#加载" class="headerlink" title="加载"></a>加载</h3><table>
+<thead>
+<tr>
+<th>#</th>
+<th>检查项</th>
+<th>命令 &#x2F; 位置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>各仓库已 <code>svnadmin create</code></td>
+<td><code>ls /data/svn/data/project/repo</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>分段 load 顺序正确、无报错</td>
+<td><code>load-*.log</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>svnadmin verify</code> 全部通过</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>conf</code>&#x2F;<code>hooks</code> 已恢复，相对路径有效</td>
+<td>&#96;grep -E ‘authz-db</td>
+</tr>
+<tr>
+<td>5</td>
+<td>全局 <code>authz</code>&#x2F;<code>passwd</code> 已恢复且权限位正确</td>
+<td><code>ls -l</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>版本号与基线一致</td>
+<td><code>diff</code> 无输出</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>sqlite.db</code> 已恢复，属主 <code>admin_svn</code></td>
+<td><code>ls -l sqlite.db</code></td>
+</tr>
+</tbody></table>
+<h3 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h3><table>
+<thead>
+<tr>
+<th>#</th>
+<th>检查项</th>
+<th>命令 &#x2F; 位置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>3690 正常监听</td>
+<td>&#96;ss -tlnp</td>
+</tr>
+<tr>
+<td>2</td>
+<td>各仓库可 <code>svn ls</code> 读取</td>
+<td><code>svn ls svn://localhost/&lt;仓库&gt;</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>最新版本日志正常</td>
+<td><code>svn log -l 5</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>管理端可通过 IP 登录</td>
+<td><code>https://192.0.2.10/adminPage/login</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>账号文件未被改写</td>
+<td><code>wc -c</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>域名切换后可访问、可 checkout</td>
+<td></td>
+</tr>
+<tr>
+<td>7</td>
+<td>旧服务器保持停机且数据未删除</td>
+<td></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="十、小结"><a href="#十、小结" class="headerlink" title="十、小结"></a>十、小结</h2><p>本次迁移的主要工作量集中在三处：</p>
+<ol>
+<li><strong>备份与分段</strong>：仓库总量与中转上限决定了必须按版本区间拆分，分段之间的版本衔接和 load 顺序是正确性的关键；</li>
+<li><strong>仓库之外的配套数据</strong>：<code>conf</code>&#x2F;<code>hooks</code>、全局 <code>authz</code>&#x2F;<code>passwd</code>、<code>sqlite.db</code> 的体积都很小，但缺失或顺序错误会直接表现为”用户无法登录、权限失效”，排查成本高于迁移本身；</li>
+<li><strong>验证方式</strong>：<code>svnlook youngest</code> 比对、<code>svnadmin verify</code>、md5 三处校验、<code>svn log</code> 抽查，四项结合才能确认内容与历史都完整。</li>
+</ol>
+<p>迁移流程本身并不复杂，主要风险来自”只迁了仓库，忘了配套文件”和”分段顺序错误”两类问题。</p>
+<hr>
+<p><em>文中所有域名、IP、账号、仓库名、路径均为示例，实际执行请替换为实际环境。</em></p>
+
+      
+    </div><!-- .entry-content -->
+
+    <footer class="entry-meta">
+    <a href="/2026/11/26/svn/">
+    <time datetime="2026-11-26T02:51:50.000Z" class="entry-date">
+        2026-11-26
+    </time>
+</a>
+    
+    
+    </footer>
+</article>
+
+
+    
+<nav class="nav-single">
+    <h3 class="assistive-text">文章导航</h3>
+    
+        <span class="nav-previous"><a href="/2026/11/26/redis%E4%B8%BB%E4%BB%8E+%E5%93%A8%E5%85%B5%E9%83%A8%E7%BD%B2/" rel="prev"><span class="meta-nav">←</span> redis主从+哨兵部署</a></span>
+    
+    
+        <span class="nav-next"><a href="/2026/11/26/gitlab_%E8%BF%81%E7%A7%BB_%E5%8D%87%E7%BA%A7/" rel="next">GitLab迁移 <span class="meta-nav">→</span></a></span>
+    
+</nav><!-- .nav-single -->
+
+
+
+
+
+
+
+</div></div>
+        <div id="secondary" class="widget-area" role="complementary">
+  
+    <aside id="search" class="widget widget_search">
+    <form role="search" method="get" accept-charset="utf-8" id="searchform" 
+        class="searchform" action="//google.com/search">
+        <div>
+            <input type="text" value="" name="s" id="s" />
+            <input type="submit" id="searchsubmit" value="搜索" />
+        </div>
+    </form>
+</aside>
+  
+    
+  
+    
+  
+    
+  <aside class="widget">
+    <h3 class="widget-title">最近文章</h3>
+    <div class="widget-content">
+      <ul>
+        
+          <li>
+            <a href="/2026/11/26/minio+kms/">minio+kms</a>
+          </li>
+        
+          <li>
+            <a href="/2026/11/26/redis%E4%B8%BB%E4%BB%8E+%E5%93%A8%E5%85%B5%E9%83%A8%E7%BD%B2/">redis主从+哨兵部署</a>
+          </li>
+        
+          <li>
+            <a href="/2026/11/26/svn/">svn迁移</a>
+          </li>
+        
+          <li>
+            <a href="/2026/11/26/gitlab_%E8%BF%81%E7%A7%BB_%E5%8D%87%E7%BA%A7/">GitLab迁移</a>
+          </li>
+        
+          <li>
+            <a href="/2025/12/27/%E5%B0%9D%E8%AF%95%E4%BE%BF%E6%8D%B7%E6%9B%B4%E6%96%B0%E5%8D%9A%E5%AE%A2/">尝试便捷更新博客</a>
+          </li>
+        
+      </ul>
+    </div>
+  </aside>
+
+  
+    
+  
+    
+  
+</div>
+      </div>
+      <footer id="colophon" role="contentinfo">
+    <p>&copy; 2026 xsx
+    All rights reserved.</p>
+    <p>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></p>
+</footer>
+    <script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"1","bdMiniList":false,"bdPic":"","bdStyle":"2","bdSize":"16"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='/js/share.js'];</script>
+
+<script src="/js/jquery-3.3.1.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+<script src="/js/navigation.js"></script>
+
+<div id="bg"></div>
+
+  </div>
+</body>
+</html>

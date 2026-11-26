@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <meta name="description" content="描述" />
+  
+
+  
+  <meta name="keywords" content="关键词1,关键词2" />
+  
+  
+  
+  
+  
+  
+  <title>redis主从+哨兵部署 | 谢某</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Redis 主从 + Sentinel 哨兵部署实践 内网离线环境下，用源码编译部署一主一从 Redis，并在三台服务器上运行 Sentinel 实现自动故障转移。文中 IP、主机名、密码、账号均为示例（192.0.2.x &#x2F; node-a &#x2F; 【Redis密码】），请替换为实际环境。  写在前面适用场景：内网自建 Redis，服务器无法访问外网，操作系统为国产化发行版（Kyl">
+<meta property="og:type" content="article">
+<meta property="og:title" content="redis主从+哨兵部署">
+<meta property="og:url" content="https://xie-shao-xi.github.io/2026/11/26/redis%E4%B8%BB%E4%BB%8E+%E5%93%A8%E5%85%B5%E9%83%A8%E7%BD%B2/index.html">
+<meta property="og:site_name" content="谢某">
+<meta property="og:description" content="Redis 主从 + Sentinel 哨兵部署实践 内网离线环境下，用源码编译部署一主一从 Redis，并在三台服务器上运行 Sentinel 实现自动故障转移。文中 IP、主机名、密码、账号均为示例（192.0.2.x &#x2F; node-a &#x2F; 【Redis密码】），请替换为实际环境。  写在前面适用场景：内网自建 Redis，服务器无法访问外网，操作系统为国产化发行版（Kyl">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-11-26T09:21:08.000Z">
+<meta property="article:modified_time" content="2026-11-26T09:26:55.711Z">
+<meta property="article:author" content="xsx">
+<meta property="article:tag" content="关键词1,关键词2">
+<meta name="twitter:card" content="summary">
+  
+  
+    <link rel="icon" href="/css/images/favicon.ico">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+
+  
+  <!-- baidu webmaster push -->
+  <script src='//push.zhanzhang.baidu.com/push.js'></script>
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body class="home blog custom-background custom-font-enabled single-author">
+  <div id="page" class="hfeed site">
+      <header id="masthead" class="site-header" role="banner">
+    <hgroup>
+      <h1 class="site-title">
+        <a href="/" title="谢某" rel="home">谢某</a>
+      </h1>
+      
+        <h2 class="site-description hitokoto"></h2>
+        <script type="text/javascript" src="https://v1.hitokoto.cn/?encode=js"></script>
+      
+    </hgroup>
+
+    <nav id="site-navigation" class="main-navigation" role="navigation">
+            <button class="menu-toggle">菜单</button>
+            <a class="assistive-text" href="/#content" title="跳至内容">跳至内容</a><!--TODO-->
+            <div class="menu-main-container">
+                <ul id="menu-main" class="nav-menu">
+                
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="/">首页</a></li>
+                
+                    <li class="menu-item menu-item-type-post_type menu-item-object-page"><a href="/archives">归档</a></li>
+                
+                </ul>
+            </div>
+    </nav>
+</header>
+
+      <div id="main" class="wrapper">
+        <div id="primary" class="site-content"><div id="content" role="main"><article id="post-redis主从+哨兵部署" class="post-redis主从+哨兵部署 post type-post status-publish format-standard hentry">
+    <!---->
+
+      <header class="entry-header">
+        
+        
+  
+    <h1 class="entry-title article-title">
+      redis主从+哨兵部署
+    </h1>
+  
+
+        
+        <div class="comments-link">
+            
+            <!-- <a href="javascript:void(0);" data-url="https://xie-shao-xi.github.io/2026/11/26/redis%E4%B8%BB%E4%BB%8E+%E5%93%A8%E5%85%B5%E9%83%A8%E7%BD%B2/" data-id="cmwxcm90y0004uknt1mvfdpsn" class="leave-reply bdsharebuttonbox" data-cmd="more">Share</a> -->
+        </div><!-- .comments-link -->
+      </header><!-- .entry-header -->
+
+    <div class="entry-content">
+      
+        <h1 id="Redis-主从-Sentinel-哨兵部署实践"><a href="#Redis-主从-Sentinel-哨兵部署实践" class="headerlink" title="Redis 主从 + Sentinel 哨兵部署实践"></a>Redis 主从 + Sentinel 哨兵部署实践</h1><blockquote>
+<p>内网离线环境下，用源码编译部署一主一从 Redis，并在三台服务器上运行 Sentinel 实现自动故障转移。<br>文中 IP、主机名、密码、账号均为示例（<code>192.0.2.x</code> &#x2F; <code>node-a</code> &#x2F; <code>【Redis密码】</code>），请替换为实际环境。</p>
+</blockquote>
+<h2 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h2><p><strong>适用场景</strong>：内网自建 Redis，服务器无法访问外网，操作系统为国产化发行版（Kylin V10 &#x2F; aarch64 同类环境），需要主从复制加自动故障转移，但不使用 Redis Cluster 分片。</p>
+<p><strong>版本</strong>：Redis 8.10.0（源码编译，仅核心版）；Sentinel 与 Redis 同一套二进制。</p>
+<p><strong>节点规划</strong>：两台数据库服务器承担一主一从，一台应用服务器只运行 Sentinel，共三个哨兵满足 <code>quorum=2</code> 的要求。</p>
+<p><strong>核心结论</strong>：</p>
+<ol>
+<li><strong>Sentinel 只负责监控与故障转移，不存储数据、不分片</strong>；数据仍由主从复制同步，容量上限等于单机内存。</li>
+<li><strong>哨兵数量建议为 3 个</strong>，<code>quorum</code> 设为 2：既能在单点故障时完成选举，又能避免出现两个哨兵互相认定对方失联的脑裂。</li>
+<li><strong>离线 + 国产化系统只编译核心版</strong>（<code>MALLOC=libc</code>，不加载 modules），完整编译常因模块依赖失败。</li>
+<li><strong>应用必须通过 Sentinel 获取主节点地址</strong>，不能写死主节点 IP，否则故障转移后仍连旧主。</li>
+</ol>
+<p>以下按”架构规划 → 安装 Redis → 配置主从 → 自启与日志 → 部署 Sentinel → 故障转移验证 → 运维 → 常见问题 → 检查清单”展开。</p>
+<hr>
+<h2 id="一、架构与规划"><a href="#一、架构与规划" class="headerlink" title="一、架构与规划"></a>一、架构与规划</h2><h3 id="1-1-节点与角色"><a href="#1-1-节点与角色" class="headerlink" title="1.1 节点与角色"></a>1.1 节点与角色</h3><table>
+<thead>
+<tr>
+<th>节点</th>
+<th>角色</th>
+<th>监听端口</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>node-a <code>192.0.2.10</code></td>
+<td>Redis 主节点 + Sentinel</td>
+<td>6379 &#x2F; 26379</td>
+<td>写入入口</td>
+</tr>
+<tr>
+<td>node-b <code>192.0.2.11</code></td>
+<td>Redis 从节点 + Sentinel</td>
+<td>6379 &#x2F; 26379</td>
+<td>只读，主挂后可能被提升</td>
+</tr>
+<tr>
+<td>node-c <code>192.0.2.12</code></td>
+<td>仅 Sentinel</td>
+<td>26379</td>
+<td>应用服务器，装 Redis 只为获得 <code>redis-sentinel</code> 二进制</td>
+</tr>
+</tbody></table>
+<p>数据流与发现关系：</p>
+<pre class="line-numbers language-none"><code class="language-none">应用 → Sentinel（三节点 :26379）→ 查询 mymaster → 当前主节点 A:6379
+                                     ↑
+                        A(6379) ──复制──▶ B(6379)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="1-2-端口与防火墙"><a href="#1-2-端口与防火墙" class="headerlink" title="1.2 端口与防火墙"></a>1.2 端口与防火墙</h3><ul>
+<li><strong>6379</strong>：只对从节点和应用服务器开放，不要对全网段开放；</li>
+<li><strong>26379</strong>：三台哨兵之间必须互通，否则 <code>sentinels=3</code> 永远不成立。</li>
+</ul>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> iptables <span class="token parameter variable">-L</span> <span class="token parameter variable">-n</span> --line-numbers
+
+<span class="token comment"># 以主节点 node-a 为例：允许从节点与本机哨兵访问 6379</span>
+<span class="token function">sudo</span> iptables <span class="token parameter variable">-I</span> INPUT <span class="token number">5</span> <span class="token parameter variable">-p</span> tcp <span class="token parameter variable">-s</span> <span class="token number">192.0</span>.2.11 <span class="token parameter variable">--dport</span> <span class="token number">6379</span> <span class="token parameter variable">-j</span> ACCEPT
+<span class="token function">sudo</span> iptables <span class="token parameter variable">-I</span> INPUT <span class="token number">6</span> <span class="token parameter variable">-p</span> tcp <span class="token parameter variable">-s</span> <span class="token number">192.0</span>.2.12 <span class="token parameter variable">--dport</span> <span class="token number">6379</span> <span class="token parameter variable">-j</span> ACCEPT
+
+<span class="token function">sudo</span> <span class="token function">service</span> iptables save
+<span class="token function">sudo</span> iptables <span class="token parameter variable">-L</span> <span class="token parameter variable">-n</span> --line-numbers<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<blockquote>
+<p>云环境还需要在安全组中同步放行，iptables 与安全组是两道独立的限制。</p>
+</blockquote>
+<h3 id="1-3-部署顺序"><a href="#1-3-部署顺序" class="headerlink" title="1.3 部署顺序"></a>1.3 部署顺序</h3><ol>
+<li>两台数据库服务器安装并编译 Redis；</li>
+<li>配置主从并验证复制；</li>
+<li>配置 systemd 自启与日志轮转；</li>
+<li>三台服务器部署 Sentinel（第三台同样需要 Redis 二进制）；</li>
+<li>验证哨兵互相发现；</li>
+<li>做一次主动故障转移演练。</li>
+</ol>
+<hr>
+<h2 id="二、安装-Redis"><a href="#二、安装-Redis" class="headerlink" title="二、安装 Redis"></a>二、安装 Redis</h2><h3 id="2-1-下载地址与编译依赖"><a href="#2-1-下载地址与编译依赖" class="headerlink" title="2.1 下载地址与编译依赖"></a>2.1 下载地址与编译依赖</h3><p><strong>源码包</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>内容</th>
+<th>地址</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Redis 8.10.0 源码</td>
+<td><code>https://download.redis.io/releases/redis-8.10.0.tar.gz</code></td>
+</tr>
+<tr>
+<td>全部版本索引</td>
+<td><code>https://download.redis.io/releases/</code></td>
+</tr>
+<tr>
+<td>下载入口页</td>
+<td><code>https://redis.io/downloads/</code></td>
+</tr>
+</tbody></table>
+<p>索引目录中同时提供 8.10.x 的补丁版本（8.10.1 &#x2F; 8.10.2 &#x2F; 8.10.3）与更高次要版本（如 8.12.x）。本文示例沿用部署时的 8.10.0，新建环境建议直接使用所在 minor 系列的最新补丁版本，升级时保持 minor 不变、只做补丁级变更。</p>
+<p><strong>编译依赖</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>依赖</th>
+<th>用途</th>
+<th>是否必需</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>gcc</code></td>
+<td>编译</td>
+<td>必需</td>
+</tr>
+<tr>
+<td><code>make</code></td>
+<td>构建</td>
+<td>必需</td>
+</tr>
+<tr>
+<td><code>glibc-devel</code></td>
+<td>编译所需的头文件与链接库</td>
+<td>必需</td>
+</tr>
+<tr>
+<td><code>tar</code>、<code>gzip</code></td>
+<td>解压源码包</td>
+<td>必需</td>
+</tr>
+<tr>
+<td><code>openssl-devel</code></td>
+<td>启用 TLS 相关功能时使用</td>
+<td>可选</td>
+</tr>
+<tr>
+<td><code>tcl</code></td>
+<td>仅 <code>make test</code> 需要</td>
+<td>可选</td>
+</tr>
+</tbody></table>
+<p>检查是否已安装：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">gcc <span class="token parameter variable">--version</span>
+<span class="token function">make</span> <span class="token parameter variable">--version</span>
+<span class="token function">rpm</span> <span class="token parameter variable">-q</span> glibc-devel<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p><strong>离线环境获取依赖</strong>：从系统安装 ISO 的 <code>Packages</code> 目录或内部 yum 源安装，例如麒麟 V10 的软件源目录：</p>
+<pre class="line-numbers language-none"><code class="language-none">https:&#x2F;&#x2F;update.cs2c.com.cn&#x2F;NS&#x2F;V10&#x2F;V10SP3&#x2F;os&#x2F;adv&#x2F;lic&#x2F;base&#x2F;aarch64&#x2F;Packages&#x2F;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> yum <span class="token function">install</span> <span class="token parameter variable">-y</span> gcc <span class="token function">make</span> glibc-devel
+<span class="token comment"># 完全离线时先用 yumdownloader 或从 ISO 拷贝依赖包，再本地安装</span>
+<span class="token function">sudo</span> yum localinstall <span class="token parameter variable">-y</span> ./gcc-*.rpm ./make-*.rpm ./glibc-devel-*.rpm<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p><strong>校验</strong>：Redis 官方 releases 目录只提供源码包本身，没有独立的 <code>.sha256</code> 旁文件。下载后记录文件大小（<code>ls -l</code>）并与索引页显示值比对；经过堡垒机中转时，建议在内部制品库再计算一次 <code>sha256sum</code> 并留档。</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">sha256sum redis-8.10.0.tar.gz<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h3 id="2-2-编译与安装"><a href="#2-2-编译与安装" class="headerlink" title="2.2 编译与安装"></a>2.2 编译与安装</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">mkdir</span> <span class="token parameter variable">-p</span> /usr/local/redis
+<span class="token function">sudo</span> <span class="token function">chown</span> <span class="token parameter variable">-R</span> <span class="token variable"><span class="token variable">$(</span><span class="token function">whoami</span><span class="token variable">)</span></span><span class="token builtin class-name">:</span><span class="token variable"><span class="token variable">$(</span><span class="token function">whoami</span><span class="token variable">)</span></span> /usr/local/redis
+<span class="token function">sudo</span> <span class="token function">chmod</span> <span class="token number">755</span> /usr/local/redis<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>通过堡垒机把源码包上传到 <code>/usr/local/redis</code>，然后解压：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> /usr/local/redis
+<span class="token function">sudo</span> <span class="token function">tar</span> xzf redis-8.10.0.tar.gz
+<span class="token builtin class-name">cd</span> redis-8.10.0<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>离线环境与国产化系统上，完整编译常常卡在模块依赖（如 jemalloc、RedisJSON 等）。只编译核心并强制使用 libc 分配器：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> src
+<span class="token function">sudo</span> <span class="token function">make</span> <span class="token assign-left variable">MALLOC</span><span class="token operator">=</span>libc -j<span class="token variable"><span class="token variable">$(</span>nproc<span class="token variable">)</span></span>
+<span class="token function">sudo</span> <span class="token function">make</span> <span class="token assign-left variable">PREFIX</span><span class="token operator">=</span>/usr/local/redis <span class="token function">install</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>安装后的目录结构：</p>
+<pre class="line-numbers language-none"><code class="language-none">&#x2F;usr&#x2F;local&#x2F;redis&#x2F;bin&#x2F;redis-server
+&#x2F;usr&#x2F;local&#x2F;redis&#x2F;bin&#x2F;redis-cli
+&#x2F;usr&#x2F;local&#x2F;redis&#x2F;bin&#x2F;redis-sentinel   → 通常是 redis-server 的链接<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>验证：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/usr/local/redis/bin/redis-server <span class="token parameter variable">--version</span>
+/usr/local/redis/bin/redis-cli <span class="token parameter variable">--version</span>
+<span class="token function">ls</span> <span class="token parameter variable">-l</span> /usr/local/redis/bin/<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="2-3-数据与日志目录"><a href="#2-3-数据与日志目录" class="headerlink" title="2.3 数据与日志目录"></a>2.3 数据与日志目录</h3><p>数据与日志放在数据盘，避免系统盘被 RDB&#x2F;AOF 写满：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">mkdir</span> <span class="token parameter variable">-p</span> /data/redis/data /data/redis/logs
+<span class="token function">sudo</span> <span class="token function">chown</span> <span class="token parameter variable">-R</span> <span class="token variable"><span class="token variable">$(</span><span class="token function">whoami</span><span class="token variable">)</span></span><span class="token builtin class-name">:</span><span class="token variable"><span class="token variable">$(</span><span class="token function">whoami</span><span class="token variable">)</span></span> /data/redis
+<span class="token function">sudo</span> <span class="token function">chmod</span> <span class="token parameter variable">-R</span> <span class="token number">755</span> /data/redis
+<span class="token function">touch</span> /data/redis/logs/redis-server.log<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<hr>
+<h2 id="三、配置主从"><a href="#三、配置主从" class="headerlink" title="三、配置主从"></a>三、配置主从</h2><h3 id="3-1-关键配置项"><a href="#3-1-关键配置项" class="headerlink" title="3.1 关键配置项"></a>3.1 关键配置项</h3><p>修改 <code>/usr/local/redis/redis-8.10.0/redis.conf</code>：</p>
+<table>
+<thead>
+<tr>
+<th>配置项</th>
+<th>建议值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>bind</code></td>
+<td><code>0.0.0.0</code></td>
+<td>监听所有网卡；如网络规划允许，改为具体内网地址更安全</td>
+</tr>
+<tr>
+<td><code>protected-mode</code></td>
+<td><code>no</code></td>
+<td>关闭保护模式，访问控制由 <code>requirepass</code> 与防火墙承担</td>
+</tr>
+<tr>
+<td><code>port</code></td>
+<td><code>6379</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>daemonize</code></td>
+<td><code>yes</code></td>
+<td>与 <code>Type=forking</code> 的 systemd 单元配合</td>
+</tr>
+<tr>
+<td><code>pidfile</code></td>
+<td><code>/data/redis/redis_6379.pid</code></td>
+<td>指向数据盘，避免权限问题</td>
+</tr>
+<tr>
+<td><code>logfile</code></td>
+<td><code>/data/redis/logs/redis-server.log</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>dir</code></td>
+<td><code>/data/redis/data</code></td>
+<td>RDB&#x2F;AOF 落盘位置</td>
+</tr>
+<tr>
+<td><code>requirepass</code></td>
+<td>强密码</td>
+<td>主从都需设置</td>
+</tr>
+<tr>
+<td><code>masterauth</code></td>
+<td>与主节点密码一致</td>
+<td>从节点必须配置，否则复制报 <code>NOAUTH</code></td>
+</tr>
+</tbody></table>
+<h3 id="3-2-主节点配置"><a href="#3-2-主节点配置" class="headerlink" title="3.2 主节点配置"></a>3.2 主节点配置</h3><pre class="line-numbers language-conf" data-language="conf"><code class="language-conf">requirepass 【Redis密码】
+bind 0.0.0.0
+protected-mode no
+port 6379
+daemonize yes
+pidfile &#x2F;data&#x2F;redis&#x2F;redis_6379.pid
+logfile &#x2F;data&#x2F;redis&#x2F;logs&#x2F;redis-server.log
+dir &#x2F;data&#x2F;redis&#x2F;data<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>注释掉 <code>loadmodule</code> 相关配置，因为当前只安装了核心版，没有模块文件。</p>
+<h3 id="3-3-从节点配置"><a href="#3-3-从节点配置" class="headerlink" title="3.3 从节点配置"></a>3.3 从节点配置</h3><p>除主节点的基础配置外，额外增加：</p>
+<pre class="line-numbers language-conf" data-language="conf"><code class="language-conf"># 初始拓扑指向主节点；哨兵接管后会被自动改写
+replicaof 192.0.2.10 6379
+
+# 主节点设置了 requirepass 时必须配置
+masterauth 【Redis密码】<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><code>replicaof</code> 只是<strong>初始</strong>拓扑。哨兵完成一次故障转移后会重写该配置，届时手工修改可能被覆盖，正确做法是通过哨兵变更拓扑。</p>
+<h3 id="3-4-关于脑裂防护"><a href="#3-4-关于脑裂防护" class="headerlink" title="3.4 关于脑裂防护"></a>3.4 关于脑裂防护</h3><p><code>min-replicas-to-write</code> 要求”至少 N 个从节点在线才允许写入”。本架构只有一主一从，主节点一旦与从节点失联，在线从节点数为 0，该配置会导致主节点拒绝所有写入，反而扩大故障范围，因此保持默认关闭：</p>
+<pre class="line-numbers language-conf" data-language="conf"><code class="language-conf"># min-replicas-to-write 0
+# min-replicas-max-lag 10<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<p>若后续扩展为”一主多从”，再考虑开启。</p>
+<h3 id="3-5-启动与验证"><a href="#3-5-启动与验证" class="headerlink" title="3.5 启动与验证"></a>3.5 启动与验证</h3><p>两台服务器分别启动：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/usr/local/redis/bin/redis-server /usr/local/redis/redis-8.10.0/redis.conf
+<span class="token function">ps</span> <span class="token parameter variable">-ef</span> <span class="token operator">|</span> <span class="token function">grep</span> redis-server <span class="token operator">|</span> <span class="token function">grep</span> <span class="token parameter variable">-v</span> <span class="token function">grep</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<p>查看复制状态：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token assign-left variable">REDISCLI_AUTH</span><span class="token operator">=</span><span class="token string">'【Redis密码】'</span> /usr/local/redis/bin/redis-cli <span class="token parameter variable">-p</span> <span class="token number">6379</span> INFO replication<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>主节点预期输出：</p>
+<pre class="line-numbers language-none"><code class="language-none">role:master
+connected_slaves:1
+slave0:ip&#x3D;192.0.2.11,port&#x3D;6379,state&#x3D;online,offset&#x3D;...,lag&#x3D;0<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p>从节点预期输出：</p>
+<pre class="line-numbers language-none"><code class="language-none">role:slave
+master_host:192.0.2.10
+master_link_status:up<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+
+<p><code>master_link_status:down</code> 时依次检查：主节点密码是否与 <code>masterauth</code> 一致、6379 是否放行、<code>replicaof</code> 地址是否正确。</p>
+<h3 id="3-6-数据同步测试"><a href="#3-6-数据同步测试" class="headerlink" title="3.6 数据同步测试"></a>3.6 数据同步测试</h3><p>主节点写入：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token assign-left variable">REDISCLI_AUTH</span><span class="token operator">=</span><span class="token string">'【Redis密码】'</span> /usr/local/redis/bin/redis-cli <span class="token parameter variable">-p</span> <span class="token number">6379</span> SET test_key <span class="token string">"hello_redis"</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>从节点读取：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token assign-left variable">REDISCLI_AUTH</span><span class="token operator">=</span><span class="token string">'【Redis密码】'</span> /usr/local/redis/bin/redis-cli <span class="token parameter variable">-h</span> <span class="token number">192.0</span>.2.11 <span class="token parameter variable">-p</span> <span class="token number">6379</span> GET test_key<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>返回 <code>hello_redis</code> 即主从复制正常。从节点默认 <code>replica-read-only yes</code>，写入会报 <code>READONLY</code>。</p>
+<hr>
+<h2 id="四、systemd-自启与日志轮转"><a href="#四、systemd-自启与日志轮转" class="headerlink" title="四、systemd 自启与日志轮转"></a>四、systemd 自启与日志轮转</h2><h3 id="4-1-停止脚本"><a href="#4-1-停止脚本" class="headerlink" title="4.1 停止脚本"></a>4.1 停止脚本</h3><p>Redis 由 systemd 托管且配置了 <code>Restart=always</code>，直接 <code>kill</code> 会被自动拉起。停止脚本从配置文件读取密码，避免把密码明文写进 unit 文件：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">tee</span> /usr/local/redis/bin/redis-stop.sh <span class="token operator">></span> /dev/null <span class="token operator">&lt;&lt;</span><span class="token string">'SCRIPT'
+#!/bin/bash
+CONF=/usr/local/redis/redis-8.10.0/redis.conf
+PASS=$(awk '/^[[:space:]]*requirepass[[:space:]]/ &#123;print $2; exit&#125;' "$CONF" \
+  | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
+if [ -z "$PASS" ]; then
+  echo "redis-stop: requirepass not found or empty in $CONF" >&amp;2
+  exit 1
+fi
+REDISCLI_AUTH="$PASS" /usr/local/redis/bin/redis-cli shutdown
+SCRIPT</span>
+
+<span class="token function">sudo</span> <span class="token function">chmod</span> <span class="token number">700</span> /usr/local/redis/bin/redis-stop.sh
+<span class="token function">sudo</span> <span class="token function">chown</span> root:root /usr/local/redis/bin/redis-stop.sh<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="4-2-服务单元"><a href="#4-2-服务单元" class="headerlink" title="4.2 服务单元"></a>4.2 服务单元</h3><pre class="line-numbers language-ini" data-language="ini"><code class="language-ini"><span class="token comment"># /etc/systemd/system/redis.service</span>
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">Unit</span><span class="token punctuation">]</span></span>
+<span class="token key attr-name">Description</span><span class="token punctuation">=</span><span class="token value attr-value">Redis Server</span>
+<span class="token key attr-name">After</span><span class="token punctuation">=</span><span class="token value attr-value">network.target</span>
+
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">Service</span><span class="token punctuation">]</span></span>
+<span class="token key attr-name">Type</span><span class="token punctuation">=</span><span class="token value attr-value">forking</span>
+<span class="token key attr-name">ExecStart</span><span class="token punctuation">=</span><span class="token value attr-value">/usr/local/redis/bin/redis-server /usr/local/redis/redis-8.10.0/redis.conf</span>
+<span class="token key attr-name">ExecStop</span><span class="token punctuation">=</span><span class="token value attr-value">/usr/local/redis/bin/redis-stop.sh</span>
+<span class="token key attr-name">Restart</span><span class="token punctuation">=</span><span class="token value attr-value">always</span>
+
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">Install</span><span class="token punctuation">]</span></span>
+<span class="token key attr-name">WantedBy</span><span class="token punctuation">=</span><span class="token value attr-value">multi-user.target</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>启用：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> systemctl daemon-reload
+<span class="token function">sudo</span> systemctl <span class="token builtin class-name">enable</span> redis
+<span class="token function">sudo</span> systemctl start redis
+<span class="token function">sudo</span> systemctl status redis<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<blockquote>
+<p>该单元未指定 <code>User=</code>，服务以 root 运行。如需改为专用账号，需同时调整 <code>/data/redis</code> 属主、<code>pidfile</code> 与日志文件属主，并确认该账号对 <code>/data/redis</code> 有读写权限。</p>
+</blockquote>
+<h3 id="4-3-日志轮转"><a href="#4-3-日志轮转" class="headerlink" title="4.3 日志轮转"></a>4.3 日志轮转</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">tee</span> /etc/logrotate.d/redis <span class="token operator">></span> /dev/null <span class="token operator">&lt;&lt;</span><span class="token string">'EOF'
+/data/redis/logs/redis-server.log &#123;
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+&#125;
+EOF</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>使用 <code>copytruncate</code> 的原因是无需向 Redis 发送重开日志的信号，也就不需要在轮转脚本中处理密码；代价是轮转瞬间可能丢失少量日志。</p>
+<p>强制轮转并触发一条日志确认新文件生效：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">logrotate</span> <span class="token parameter variable">--force</span> /etc/logrotate.d/redis
+<span class="token assign-left variable">REDISCLI_AUTH</span><span class="token operator">=</span><span class="token string">'【Redis密码】'</span> /usr/local/redis/bin/redis-cli CONFIG SET loglevel verbose
+<span class="token assign-left variable">REDISCLI_AUTH</span><span class="token operator">=</span><span class="token string">'【Redis密码】'</span> /usr/local/redis/bin/redis-cli CONFIG SET loglevel notice
+<span class="token function">ls</span> <span class="token parameter variable">-l</span> /data/redis/logs/<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<hr>
+<h2 id="五、部署-Sentinel"><a href="#五、部署-Sentinel" class="headerlink" title="五、部署 Sentinel"></a>五、部署 Sentinel</h2><h3 id="5-1-为什么第三台也要装-Redis"><a href="#5-1-为什么第三台也要装-Redis" class="headerlink" title="5.1 为什么第三台也要装 Redis"></a>5.1 为什么第三台也要装 Redis</h3><p>Sentinel 由 <code>redis-sentinel</code> 启动，该文件来自 Redis 安装包。第三台应用服务器不需要运行 Redis 实例，但需要这份二进制，因此同样执行第二节的编译安装，只是不启动 <code>redis-server</code>。</p>
+<h3 id="5-2-配置目录与文件"><a href="#5-2-配置目录与文件" class="headerlink" title="5.2 配置目录与文件"></a>5.2 配置目录与文件</h3><p>三台服务器都执行：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">mkdir</span> <span class="token parameter variable">-p</span> /usr/local/redis/sentinel /data/redis/sentinel
+<span class="token function">sudo</span> <span class="token function">chown</span> <span class="token parameter variable">-R</span> <span class="token variable"><span class="token variable">$(</span><span class="token function">whoami</span><span class="token variable">)</span></span><span class="token builtin class-name">:</span><span class="token variable"><span class="token variable">$(</span><span class="token function">whoami</span><span class="token variable">)</span></span> /usr/local/redis/sentinel /data/redis/sentinel
+<span class="token function">sudo</span> <span class="token function">chmod</span> <span class="token number">700</span> /usr/local/redis/sentinel
+
+<span class="token function">sudo</span> <span class="token function">touch</span> /usr/local/redis/sentinel/sentinel.conf
+<span class="token function">sudo</span> <span class="token function">chmod</span> <span class="token number">600</span> /usr/local/redis/sentinel/sentinel.conf
+<span class="token function">sudo</span> <span class="token function">chown</span> <span class="token variable"><span class="token variable">$(</span><span class="token function">whoami</span><span class="token variable">)</span></span><span class="token builtin class-name">:</span><span class="token variable"><span class="token variable">$(</span><span class="token function">whoami</span><span class="token variable">)</span></span> /usr/local/redis/sentinel/sentinel.conf<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="5-3-sentinel-conf"><a href="#5-3-sentinel-conf" class="headerlink" title="5.3 sentinel.conf"></a>5.3 sentinel.conf</h3><pre class="line-numbers language-conf" data-language="conf"><code class="language-conf"># &#x2F;usr&#x2F;local&#x2F;redis&#x2F;sentinel&#x2F;sentinel.conf
+port 26379
+daemonize yes
+pidfile &#x2F;data&#x2F;redis&#x2F;sentinel&#x2F;sentinel.pid
+logfile &#x2F;data&#x2F;redis&#x2F;sentinel&#x2F;sentinel.log
+dir &#x2F;data&#x2F;redis&#x2F;sentinel
+
+# mymaster 为集群名称，三台必须完全一致
+sentinel monitor mymaster 192.0.2.10 6379 2
+
+# 与 Redis 的 requirepass 保持一致
+sentinel auth-pass mymaster 【Redis密码】
+
+# 5 秒无响应判定主观下线
+sentinel down-after-milliseconds mymaster 5000
+# 故障转移超时时间
+sentinel failover-timeout mymaster 60000
+# 每次只允许一个从节点与新主同步
+sentinel parallel-syncs mymaster 1<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>参数含义：</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>monitor ... 2</code></td>
+<td><code>2</code> 是 quorum：至少 2 个哨兵认可主节点失联，才进入客观下线</td>
+</tr>
+<tr>
+<td><code>auth-pass</code></td>
+<td>哨兵连接 Redis 时使用的密码，必须与 <code>requirepass</code> 一致</td>
+</tr>
+<tr>
+<td><code>down-after-milliseconds</code></td>
+<td>主观下线判定时间，过小会误判、过大会延长故障窗口</td>
+</tr>
+<tr>
+<td><code>failover-timeout</code></td>
+<td>同一次故障转移的最长处理时间，也用于抑制重复切换</td>
+</tr>
+<tr>
+<td><code>parallel-syncs</code></td>
+<td>新主产生后同时向新主同步的从节点数量，设为 1 可降低新主压力</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Sentinel 运行中会重写该文件，追加 <code>myid</code>、<code>known-sentinel</code>、<code>known-replica</code> 等内容。需要调整参数时优先使用 <code>SENTINEL SET</code>，避免在哨兵运行时直接编辑配置文件。</p>
+</blockquote>
+<h3 id="5-4-启动与集群验证"><a href="#5-4-启动与集群验证" class="headerlink" title="5.4 启动与集群验证"></a>5.4 启动与集群验证</h3><p>三台都启动：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/usr/local/redis/bin/redis-sentinel /usr/local/redis/sentinel/sentinel.conf<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>查看任一哨兵的视图：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/usr/local/redis/bin/redis-cli <span class="token parameter variable">-p</span> <span class="token number">26379</span> INFO sentinel<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>预期：</p>
+<pre class="line-numbers language-none"><code class="language-none">sentinel_masters:1
+master0:name&#x3D;mymaster,status&#x3D;ok,address&#x3D;192.0.2.10:6379,slaves&#x3D;1,sentinels&#x3D;3<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+
+<ul>
+<li><code>sentinels=3</code>：三个哨兵已互相发现；</li>
+<li><code>slaves=1</code>：哨兵已识别到从节点；</li>
+<li><code>status=ok</code>：主节点可达。</li>
+</ul>
+<p>查看其他哨兵的信息：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/usr/local/redis/bin/redis-cli <span class="token parameter variable">-p</span> <span class="token number">26379</span> SENTINEL sentinels mymaster<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p><code>sentinels=1</code> 说明只有自己，通常是 26379 端口未互通，或三台配置里的 <code>mymaster</code> 名称不一致。</p>
+<h3 id="5-5-服务单元与日志轮转"><a href="#5-5-服务单元与日志轮转" class="headerlink" title="5.5 服务单元与日志轮转"></a>5.5 服务单元与日志轮转</h3><pre class="line-numbers language-ini" data-language="ini"><code class="language-ini"><span class="token comment"># /etc/systemd/system/redis-sentinel.service</span>
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">Unit</span><span class="token punctuation">]</span></span>
+<span class="token key attr-name">Description</span><span class="token punctuation">=</span><span class="token value attr-value">Redis Sentinel</span>
+<span class="token key attr-name">After</span><span class="token punctuation">=</span><span class="token value attr-value">network.target</span>
+
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">Service</span><span class="token punctuation">]</span></span>
+<span class="token key attr-name">Type</span><span class="token punctuation">=</span><span class="token value attr-value">forking</span>
+<span class="token key attr-name">PIDFile</span><span class="token punctuation">=</span><span class="token value attr-value">/data/redis/sentinel/sentinel.pid</span>
+<span class="token key attr-name">ExecStart</span><span class="token punctuation">=</span><span class="token value attr-value">/usr/local/redis/bin/redis-sentinel /usr/local/redis/sentinel/sentinel.conf</span>
+<span class="token key attr-name">ExecStop</span><span class="token punctuation">=</span><span class="token value attr-value">/usr/local/redis/bin/redis-cli -p 26379 shutdown</span>
+<span class="token key attr-name">Restart</span><span class="token punctuation">=</span><span class="token value attr-value">on-failure</span>
+<span class="token key attr-name">RestartSec</span><span class="token punctuation">=</span><span class="token value attr-value">5</span>
+
+<span class="token section"><span class="token punctuation">[</span><span class="token section-name selector">Install</span><span class="token punctuation">]</span></span>
+<span class="token key attr-name">WantedBy</span><span class="token punctuation">=</span><span class="token value attr-value">multi-user.target</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>先停掉手工启动的实例，再交给 systemd：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/usr/local/redis/bin/redis-cli <span class="token parameter variable">-p</span> <span class="token number">26379</span> <span class="token function">shutdown</span>
+<span class="token function">sudo</span> systemctl daemon-reload
+<span class="token function">sudo</span> systemctl <span class="token builtin class-name">enable</span> <span class="token parameter variable">--now</span> redis-sentinel
+<span class="token function">sudo</span> systemctl status redis-sentinel<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p>日志轮转：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> <span class="token function">tee</span> /etc/logrotate.d/redis-sentinel <span class="token operator">></span> /dev/null <span class="token operator">&lt;&lt;</span><span class="token string">'EOF'
+/data/redis/sentinel/sentinel.log &#123;
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+&#125;
+EOF</span>
+
+<span class="token function">sudo</span> <span class="token function">logrotate</span> <span class="token parameter variable">--force</span> /etc/logrotate.d/redis-sentinel<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<hr>
+<h2 id="六、故障转移验证"><a href="#六、故障转移验证" class="headerlink" title="六、故障转移验证"></a>六、故障转移验证</h2><h3 id="6-1-记录当前主节点"><a href="#6-1-记录当前主节点" class="headerlink" title="6.1 记录当前主节点"></a>6.1 记录当前主节点</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/usr/local/redis/bin/redis-cli <span class="token parameter variable">-p</span> <span class="token number">26379</span> SENTINEL get-master-addr-by-name mymaster<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>输出两行：IP 与端口，记下当前主节点。</p>
+<h3 id="6-2-停止主节点"><a href="#6-2-停止主节点" class="headerlink" title="6.2 停止主节点"></a>6.2 停止主节点</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> systemctl stop redis<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p><code>systemctl stop</code> 会阻止 <code>Restart=always</code> 自动拉起，因此这是模拟宕机的正确方式；直接 <code>kill</code> 进程会被 systemd 重启。</p>
+<h3 id="6-3-观察切换"><a href="#6-3-观察切换" class="headerlink" title="6.3 观察切换"></a>6.3 观察切换</h3><pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token comment"># 哨兵日志中应出现 +sdown（主观下线）→ +odown（客观下线）→ +switch-master</span>
+<span class="token function">sudo</span> <span class="token function">tail</span> <span class="token parameter variable">-f</span> /data/redis/sentinel/sentinel.log
+
+<span class="token comment"># 查询新的主节点</span>
+/usr/local/redis/bin/redis-cli <span class="token parameter variable">-p</span> <span class="token number">26379</span> SENTINEL get-master-addr-by-name mymaster<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><code>+switch-master</code> 行会打印旧主与新主地址，从节点的角色同时发生改变。</p>
+<h3 id="6-4-验证新主可写、旧主可回"><a href="#6-4-验证新主可写、旧主可回" class="headerlink" title="6.4 验证新主可写、旧主可回"></a>6.4 验证新主可写、旧主可回</h3><p>在新主上写入：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token assign-left variable">REDISCLI_AUTH</span><span class="token operator">=</span><span class="token string">'【Redis密码】'</span> /usr/local/redis/bin/redis-cli <span class="token parameter variable">-h</span> <span class="token number">192.0</span>.2.11 <span class="token parameter variable">-p</span> <span class="token number">6379</span> SET test-write-check <span class="token number">1</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>启动原主节点：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> systemctl start redis<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<p>哨兵会把它重新配置为从节点，原主节点上执行 <code>INFO replication</code> 应显示 <code>role:slave</code> 且 <code>master_host</code> 指向新主。若原主仍为 master，检查哨兵日志与 <code>failover-timeout</code>，必要时等待一次完整切换周期。</p>
+<h3 id="6-5-应用侧接入方式"><a href="#6-5-应用侧接入方式" class="headerlink" title="6.5 应用侧接入方式"></a>6.5 应用侧接入方式</h3><p>应用不应写死主节点地址，而应通过哨兵获取：</p>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token comment"># Spring Boot 示例</span>
+<span class="token key atrule">spring</span><span class="token punctuation">:</span>
+  <span class="token key atrule">data</span><span class="token punctuation">:</span>
+    <span class="token key atrule">redis</span><span class="token punctuation">:</span>
+      <span class="token key atrule">password</span><span class="token punctuation">:</span> 【Redis密码】
+      <span class="token key atrule">sentinel</span><span class="token punctuation">:</span>
+        <span class="token key atrule">master</span><span class="token punctuation">:</span> mymaster
+        <span class="token key atrule">nodes</span><span class="token punctuation">:</span> 192.0.2.10<span class="token punctuation">:</span><span class="token number">26379</span><span class="token punctuation">,</span>192.0.2.11<span class="token punctuation">:</span><span class="token number">26379</span><span class="token punctuation">,</span>192.0.2.12<span class="token punctuation">:</span><span class="token number">26379</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<pre class="line-numbers language-java" data-language="java"><code class="language-java"><span class="token comment">// Jedis 示例（不同版本 API 略有差异）</span>
+<span class="token class-name">JedisSentinelPool</span> pool <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">JedisSentinelPool</span><span class="token punctuation">(</span>
+    <span class="token string">"mymaster"</span><span class="token punctuation">,</span>
+    <span class="token class-name">Set</span><span class="token punctuation">.</span><span class="token function">of</span><span class="token punctuation">(</span><span class="token string">"192.0.2.10:26379"</span><span class="token punctuation">,</span> <span class="token string">"192.0.2.11:26379"</span><span class="token punctuation">,</span> <span class="token string">"192.0.2.12:26379"</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token keyword">new</span> <span class="token class-name">JedisPoolConfig</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token string">"【Redis密码】"</span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<hr>
+<h2 id="七、运维要点"><a href="#七、运维要点" class="headerlink" title="七、运维要点"></a>七、运维要点</h2><h3 id="7-1-停止与修改配置"><a href="#7-1-停止与修改配置" class="headerlink" title="7.1 停止与修改配置"></a>7.1 停止与修改配置</h3><p>由于配置了自动重启，停止服务需用 <code>systemctl stop</code>，并确认进程与端口都已释放：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">sudo</span> systemctl stop redis
+<span class="token function">ps</span> <span class="token parameter variable">-ef</span> <span class="token operator">|</span> <span class="token function">grep</span> redis-server <span class="token operator">|</span> <span class="token function">grep</span> <span class="token parameter variable">-v</span> <span class="token function">grep</span>
+ss <span class="token parameter variable">-tlnp</span> <span class="token operator">|</span> <span class="token function">grep</span> <span class="token number">6379</span>
+
+<span class="token comment"># 修改配置后</span>
+<span class="token function">sudo</span> systemctl start redis<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="7-2-避免手工修改被托管的配置"><a href="#7-2-避免手工修改被托管的配置" class="headerlink" title="7.2 避免手工修改被托管的配置"></a>7.2 避免手工修改被托管的配置</h3><ul>
+<li><code>redis.conf</code> 中的 <code>replicaof</code> 会被哨兵改写；</li>
+<li><code>sentinel.conf</code> 运行中会被追加 <code>myid</code>、已知哨兵、已知从节点等信息。</li>
+</ul>
+<p>调整哨兵参数使用：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">/usr/local/redis/bin/redis-cli <span class="token parameter variable">-p</span> <span class="token number">26379</span> SENTINEL SET mymaster down-after-milliseconds <span class="token number">5000</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+
+<h3 id="7-3-密码与权限"><a href="#7-3-密码与权限" class="headerlink" title="7.3 密码与权限"></a>7.3 密码与权限</h3><ul>
+<li><code>redis.conf</code> 建议 <code>600</code>，<code>sentinel.conf</code> 同样 <code>600</code>；</li>
+<li>密码通过 <code>REDISCLI_AUTH</code> 环境变量传递，避免出现在 <code>ps</code> 与 shell history 中；</li>
+<li>对外只开放必要的来源网段，不应将密码作为唯一防线。</li>
+</ul>
+<h3 id="7-4-容量与持久化"><a href="#7-4-容量与持久化" class="headerlink" title="7.4 容量与持久化"></a>7.4 容量与持久化</h3><ul>
+<li>容量上限为单机内存，<code>maxmemory</code> 与淘汰策略需按业务设置；</li>
+<li>数据盘要预留 RDB 快照与 AOF 重写的空间，日志同样放在数据盘；</li>
+<li>内存不足时先扩容而不是依赖哨兵，哨兵只解决可用性问题。</li>
+</ul>
+<hr>
+<h2 id="八、常见问题"><a href="#八、常见问题" class="headerlink" title="八、常见问题"></a>八、常见问题</h2><h3 id="8-1-编译失败（jemalloc-或模块相关）"><a href="#8-1-编译失败（jemalloc-或模块相关）" class="headerlink" title="8.1 编译失败（jemalloc 或模块相关）"></a>8.1 编译失败（jemalloc 或模块相关）</h3><p>离线环境与国产化系统上，完整编译依赖较多。只编译核心：</p>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">cd</span> src
+<span class="token function">sudo</span> <span class="token function">make</span> distclean
+<span class="token function">sudo</span> <span class="token function">make</span> <span class="token assign-left variable">MALLOC</span><span class="token operator">=</span>libc -j<span class="token variable"><span class="token variable">$(</span>nproc<span class="token variable">)</span></span>
+<span class="token function">sudo</span> <span class="token function">make</span> <span class="token assign-left variable">PREFIX</span><span class="token operator">=</span>/usr/local/redis <span class="token function">install</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+
+<h3 id="8-2-从节点报-NOAUTH-或复制不建立"><a href="#8-2-从节点报-NOAUTH-或复制不建立" class="headerlink" title="8.2 从节点报 NOAUTH 或复制不建立"></a>8.2 从节点报 NOAUTH 或复制不建立</h3><ul>
+<li>从节点 <code>masterauth</code> 是否与主节点 <code>requirepass</code> 一致；</li>
+<li>主节点 <code>bind</code> 与 <code>protected-mode</code> 是否允许从节点连接；</li>
+<li>主节点 6379 是否对从节点放行。</li>
+</ul>
+<h3 id="8-3-客户端提示连接被拒绝"><a href="#8-3-客户端提示连接被拒绝" class="headerlink" title="8.3 客户端提示连接被拒绝"></a>8.3 客户端提示连接被拒绝</h3><p><code>protected-mode yes</code> 且未设置 <code>bind</code> 允许地址时，Redis 只接受本机连接。确认 <code>bind</code> 与 <code>protected-mode</code> 的组合，并检查 iptables 与安全组。</p>
+<h3 id="8-4-哨兵只看到自己（sentinels-1）"><a href="#8-4-哨兵只看到自己（sentinels-1）" class="headerlink" title="8.4 哨兵只看到自己（sentinels&#x3D;1）"></a>8.4 哨兵只看到自己（sentinels&#x3D;1）</h3><ul>
+<li>26379 是否三台互通；</li>
+<li>三台配置中 <code>mymaster</code> 名称是否完全一致；</li>
+<li>是否存在重复启动的哨兵进程占用不同配置文件。</li>
+</ul>
+<h3 id="8-5-主节点宕机但没有触发切换"><a href="#8-5-主节点宕机但没有触发切换" class="headerlink" title="8.5 主节点宕机但没有触发切换"></a>8.5 主节点宕机但没有触发切换</h3><ul>
+<li>quorum 是否满足：三个哨兵中至少两个判定客观下线；</li>
+<li><code>down-after-milliseconds</code> 是否过大；</li>
+<li>哨兵日志中是否出现 <code>+sdown</code> 但缺少 <code>+odown</code>（说明另一台哨兵未认可）。</li>
+</ul>
+<h3 id="8-6-日志没有轮转"><a href="#8-6-日志没有轮转" class="headerlink" title="8.6 日志没有轮转"></a>8.6 日志没有轮转</h3><ul>
+<li>检查 <code>/etc/logrotate.d/redis</code>、<code>redis-sentinel</code> 是否存在且语法正确；</li>
+<li>使用 <code>copytruncate</code> 时不需要 <code>create</code>，若同时存在可能产生空文件；</li>
+<li>手动执行一次 <code>logrotate --force</code> 观察输出。</li>
+</ul>
+<h3 id="8-7-故障转移后应用仍连旧主"><a href="#8-7-故障转移后应用仍连旧主" class="headerlink" title="8.7 故障转移后应用仍连旧主"></a>8.7 故障转移后应用仍连旧主</h3><p>应用写死了主节点地址。改为只配置哨兵地址与 <code>mymaster</code> 名称，由客户端库完成主节点发现。</p>
+<hr>
+<h2 id="九、检查清单"><a href="#九、检查清单" class="headerlink" title="九、检查清单"></a>九、检查清单</h2><h3 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h3><table>
+<thead>
+<tr>
+<th>#</th>
+<th>检查项</th>
+<th>命令 &#x2F; 位置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>三台节点角色与端口已规划</td>
+<td>6379 &#x2F; 26379</td>
+</tr>
+<tr>
+<td>2</td>
+<td>6379 仅对必要来源开放</td>
+<td><code>iptables -L -n</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Redis 核心版编译安装完成</td>
+<td><code>/usr/local/redis/bin/redis-server --version</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>数据与日志目录位于数据盘</td>
+<td><code>ls -ld /data/redis</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>requirepass</code> 与 <code>masterauth</code> 已配置一致</td>
+<td><code>redis.conf</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>主从复制状态为 up</td>
+<td><code>INFO replication</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>三台哨兵配置一致（<code>mymaster</code> 名称）</td>
+<td><code>sentinel.conf</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>systemd 单元已启用</td>
+<td><code>systemctl status redis</code>、<code>redis-sentinel</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>日志轮转已配置</td>
+<td><code>/etc/logrotate.d/redis*</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>应用侧已改为哨兵发现</td>
+<td>应用配置</td>
+</tr>
+</tbody></table>
+<h3 id="验证"><a href="#验证" class="headerlink" title="验证"></a>验证</h3><table>
+<thead>
+<tr>
+<th>#</th>
+<th>检查项</th>
+<th>预期</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>主节点 <code>role:master</code>、<code>connected_slaves:1</code></td>
+<td>复制正常</td>
+</tr>
+<tr>
+<td>2</td>
+<td>从节点 <code>master_link_status:up</code></td>
+<td>复制正常</td>
+</tr>
+<tr>
+<td>3</td>
+<td>主写从读一致</td>
+<td><code>SET</code> &#x2F; <code>GET</code> 结果一致</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>INFO sentinel</code> 中 <code>sentinels=3</code></td>
+<td>哨兵互相发现</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>SENTINEL sentinels mymaster</code> 列出另外两台</td>
+<td>集群完整</td>
+</tr>
+<tr>
+<td>6</td>
+<td>停主后出现 <code>+switch-master</code></td>
+<td>自动切换</td>
+</tr>
+<tr>
+<td>7</td>
+<td>原主恢复后 <code>role:slave</code></td>
+<td>自动重配</td>
+</tr>
+<tr>
+<td>8</td>
+<td>应用在切换后仍可读写</td>
+<td>未写死 IP</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="十、小结"><a href="#十、小结" class="headerlink" title="十、小结"></a>十、小结</h2><p>本次部署的要点集中在三处：</p>
+<ol>
+<li><strong>编译取舍</strong>：离线与国产化环境下只编核心版，避免在模块依赖上耗时；</li>
+<li>**哨兵是”发现层”而非”存储层”**：三个哨兵解决的是故障转移与客户端发现，容量与性能仍需靠主从与硬件；</li>
+<li><strong>配置一致性</strong>：<code>requirepass</code>&#x2F;<code>masterauth</code>、<code>mymaster</code> 名称、26379 互通、<code>copytruncate</code> 日志轮转，任一处不一致都会表现为”复制正常但切换不生效”或”日志写满磁盘”。</li>
+</ol>
+<hr>
+<p><em>文中所有 IP、主机名、密码、账号均为示例，实际执行请替换为实际环境。</em></p>
+
+      
+    </div><!-- .entry-content -->
+
+    <footer class="entry-meta">
+    <a href="/2026/11/26/redis%E4%B8%BB%E4%BB%8E+%E5%93%A8%E5%85%B5%E9%83%A8%E7%BD%B2/">
+    <time datetime="2026-11-26T09:21:08.000Z" class="entry-date">
+        2026-11-26
+    </time>
+</a>
+    
+    
+    </footer>
+</article>
+
+
+    
+<nav class="nav-single">
+    <h3 class="assistive-text">文章导航</h3>
+    
+        <span class="nav-previous"><a href="/2026/11/26/minio+kms/" rel="prev"><span class="meta-nav">←</span> minio+kms</a></span>
+    
+    
+        <span class="nav-next"><a href="/2026/11/26/svn/" rel="next">svn迁移 <span class="meta-nav">→</span></a></span>
+    
+</nav><!-- .nav-single -->
+
+
+
+
+
+
+
+</div></div>
+        <div id="secondary" class="widget-area" role="complementary">
+  
+    <aside id="search" class="widget widget_search">
+    <form role="search" method="get" accept-charset="utf-8" id="searchform" 
+        class="searchform" action="//google.com/search">
+        <div>
+            <input type="text" value="" name="s" id="s" />
+            <input type="submit" id="searchsubmit" value="搜索" />
+        </div>
+    </form>
+</aside>
+  
+    
+  
+    
+  
+    
+  <aside class="widget">
+    <h3 class="widget-title">最近文章</h3>
+    <div class="widget-content">
+      <ul>
+        
+          <li>
+            <a href="/2026/11/26/minio+kms/">minio+kms</a>
+          </li>
+        
+          <li>
+            <a href="/2026/11/26/redis%E4%B8%BB%E4%BB%8E+%E5%93%A8%E5%85%B5%E9%83%A8%E7%BD%B2/">redis主从+哨兵部署</a>
+          </li>
+        
+          <li>
+            <a href="/2026/11/26/svn/">svn迁移</a>
+          </li>
+        
+          <li>
+            <a href="/2026/11/26/gitlab_%E8%BF%81%E7%A7%BB_%E5%8D%87%E7%BA%A7/">GitLab迁移</a>
+          </li>
+        
+          <li>
+            <a href="/2025/12/27/%E5%B0%9D%E8%AF%95%E4%BE%BF%E6%8D%B7%E6%9B%B4%E6%96%B0%E5%8D%9A%E5%AE%A2/">尝试便捷更新博客</a>
+          </li>
+        
+      </ul>
+    </div>
+  </aside>
+
+  
+    
+  
+    
+  
+</div>
+      </div>
+      <footer id="colophon" role="contentinfo">
+    <p>&copy; 2026 xsx
+    All rights reserved.</p>
+    <p>Powered by <a href="http://hexo.io/" target="_blank">Hexo</a></p>
+</footer>
+    <script>window._bd_share_config={"common":{"bdSnsKey":{},"bdText":"","bdMini":"1","bdMiniList":false,"bdPic":"","bdStyle":"2","bdSize":"16"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='/js/share.js'];</script>
+
+<script src="/js/jquery-3.3.1.min.js"></script>
+
+
+  
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+
+  
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+<script src="/js/navigation.js"></script>
+
+<div id="bg"></div>
+
+  </div>
+</body>
+</html>
